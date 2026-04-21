@@ -1,4 +1,4 @@
-name: Deploy Apps Site
+name: Deploy Apps
 
 on:
   push:
