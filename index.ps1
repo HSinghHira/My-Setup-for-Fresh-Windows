@@ -119,12 +119,12 @@ Write-Host ""
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
 Write-Host "  Dev Setup" -ForegroundColor White
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
-Install-WingetApp -Id "Git.Git"                            -Label "Git"                -Version "2.47.1"
+Install-WingetApp -Id "Git.Git"                            -Label "Git"
 Install-WingetApp -Id "Oven-sh.Bun"                        -Label "Bun"
 Install-WingetApp -Id "Volta.Volta"                        -Label "Volta"
 Install-WingetApp -Id "Notepad++.Notepad++"                -Label "Notepad++"
 Install-WingetApp -Id "Google.Antigravity"                 -Label "Google Antigravity"
-Install-WingetApp -Id "Microsoft.VisualStudioCode"         -Label "VS Code"            -Version "1.96.2"
+Install-WingetApp -Id "Microsoft.VisualStudioCode"         -Label "VS Code"
 
 # Install Node via Volta
 $env:PATH += ";$env:LOCALAPPDATA\Volta\bin"
@@ -133,10 +133,10 @@ if (Get-Command volta -ErrorAction SilentlyContinue) {
     Write-Host "[$timestamp] 📦 Installing Node via Volta..." -ForegroundColor Cyan
     volta install node
     Write-Host "[$timestamp] ✅ Node installed via Volta." -ForegroundColor Green
-    $results += [PSCustomObject]@{ App = "Node.js (via Volta)"; Status = "Installed" }
+    $script:results += [PSCustomObject]@{ App = "Node.js (via Volta)"; Status = "Installed" }
 } else {
     Write-Host "[$timestamp] ❌ Volta not found — skipping Node install." -ForegroundColor Red
-    $results += [PSCustomObject]@{ App = "Node.js (via Volta)"; Status = "Failed" }
+    $script:results += [PSCustomObject]@{ App = "Node.js (via Volta)"; Status = "Failed" }
 }
 
 # ========================
@@ -201,22 +201,22 @@ if ($ollamaCmd) {
     $pulledModels = & $ollamaCmd list 2>&1
     if ($pulledModels -match "llama3\.1:8b") {
         Write-Host "⏭  llama3.1:8b already downloaded — skipping pull." -ForegroundColor Yellow
-        $results += [PSCustomObject]@{ App = "llama3.1:8b model"; Status = "Skipped" }
+        $script:results += [PSCustomObject]@{ App = "llama3.1:8b model"; Status = "Skipped" }
     } else {
         Write-Host "⬇  Pulling llama3.1:8b (~4.7 GB — this will take a while)..." -ForegroundColor Cyan
         & $ollamaCmd pull llama3.1:8b
         if ($LASTEXITCODE -eq 0) {
             Write-Host "✅ llama3.1:8b downloaded successfully." -ForegroundColor Green
-            $results += [PSCustomObject]@{ App = "llama3.1:8b model"; Status = "Installed" }
+            $script:results += [PSCustomObject]@{ App = "llama3.1:8b model"; Status = "Installed" }
         } else {
             Write-Host "❌ llama3.1:8b pull failed." -ForegroundColor Red
-            $results += [PSCustomObject]@{ App = "llama3.1:8b model"; Status = "Failed" }
+            $script:results += [PSCustomObject]@{ App = "llama3.1:8b model"; Status = "Failed" }
         }
     }
 } else {
     Write-Host "⚠️  Ollama not found. Open a new terminal after setup and run:" -ForegroundColor Yellow
     Write-Host "    ollama pull llama3.1:8b" -ForegroundColor White
-    $results += [PSCustomObject]@{ App = "llama3.1:8b model"; Status = "Failed" }
+    $script:results += [PSCustomObject]@{ App = "llama3.1:8b model"; Status = "Failed" }
 }
 
 # ========================
