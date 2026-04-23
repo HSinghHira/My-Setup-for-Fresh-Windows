@@ -137,16 +137,29 @@ winget upgrade --id Microsoft.AppInstaller --silent --accept-package-agreements 
 winget source update
 
 # ========================
+# Runtimes & Redistributables
+# ========================
+Write-Host ""
+Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
+Write-Host "  Runtimes & Redistributables" -ForegroundColor White
+Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
+Install-WingetApp -Id "Microsoft.VCRedist.2015+.x64"          -Label "VC++ Redistributable 2015+ (x64)"
+Install-WingetApp -Id "Microsoft.DotNet.DesktopRuntime.5"     -Label ".NET Desktop Runtime 5"
+Install-WingetApp -Id "Microsoft.DotNet.DesktopRuntime.6"     -Label ".NET Desktop Runtime 6"
+Install-WingetApp -Id "Microsoft.DotNet.DesktopRuntime.8"     -Label ".NET Desktop Runtime 8"
+Install-WingetApp -Id "Microsoft.DotNet.DesktopRuntime.10"    -Label ".NET Desktop Runtime 10"
+
+# ========================
 # Core Apps
 # ========================
 Write-Host ""
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
 Write-Host "  Core Apps" -ForegroundColor White
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
-Install-WingetApp -Id "7zip.7zip"                          -Label "7-Zip"
-Install-WingetApp -Id "Daum.PotPlayer"                     -Label "PotPlayer"
-Install-WingetApp -Id "ShareX.ShareX"                      -Label "ShareX"
-Install-WingetApp -Id "Gyan.FFmpeg"                        -Label "FFmpeg"
+Install-WingetApp -Id "7zip.7zip"                              -Label "7-Zip"
+Install-WingetApp -Id "Daum.PotPlayer"                         -Label "PotPlayer"
+Install-WingetApp -Id "ShareX.ShareX"                          -Label "ShareX"
+Install-WingetApp -Id "Gyan.FFmpeg"                            -Label "FFmpeg"
 
 # ========================
 # System Utilities
@@ -155,10 +168,11 @@ Write-Host ""
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
 Write-Host "  System Utilities" -ForegroundColor White
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
-Install-WingetApp -Id "xanderfrangos.twinkletray"          -Label "TwinkleTray"
-Install-WingetApp -Id "File-New-Project.EarTrumpet"        -Label "EarTrumpet"
-Install-WingetApp -Id "CrystalRich.LockHunter"             -Label "LockHunter"
-Install-WingetApp -Id "Klocman.BulkCrapUninstaller"        -Label "Bulk Crap Uninstaller"
+Install-WingetApp -Id "xanderfrangos.twinkletray"              -Label "TwinkleTray"
+Install-WingetApp -Id "File-New-Project.EarTrumpet"            -Label "EarTrumpet"
+Install-WingetApp -Id "CrystalRich.LockHunter"                 -Label "LockHunter"
+Install-WingetApp -Id "Klocman.BulkCrapUninstaller"            -Label "Bulk Crap Uninstaller"
+Install-WingetApp -Id "Microsoft.Sysinternals"                 -Label "Sysinternals Suite"
 
 # ========================
 # Productivity
@@ -167,13 +181,13 @@ Write-Host ""
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
 Write-Host "  Productivity" -ForegroundColor White
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
-Install-WingetApp -Id "PDFgear.PDFgear"                    -Label "PDFgear"
-Install-WingetApp -Id "JavadMotallebi.NeatDownloadManager" -Label "Neat Download Manager"
-Install-WingetApp -Id "flux.flux"                          -Label "f.lux"
-Install-WingetApp -Id "riyasy.FlyPhotos"                   -Label "FlyPhotos"
-Install-WingetApp -Id "UnifiedIntents.UnifiedRemote"       -Label "Unified Remote"
-Install-WingetApp -Id "Ditto.Ditto"                        -Label "Ditto"
-Install-WingetApp -Id "Microsoft.Microsoft365"             -Label "Microsoft 365"             -Source "msstore"
+Install-WingetApp -Id "PDFgear.PDFgear"                        -Label "PDFgear"
+Install-WingetApp -Id "JavadMotallebi.NeatDownloadManager"     -Label "Neat Download Manager"
+Install-WingetApp -Id "flux.flux"                              -Label "f.lux"
+Install-WingetApp -Id "riyasy.FlyPhotos"                       -Label "FlyPhotos"
+Install-WingetApp -Id "UnifiedIntents.UnifiedRemote"           -Label "Unified Remote"
+Install-WingetApp -Id "Ditto.Ditto"                            -Label "Ditto"
+Install-WingetApp -Id "Microsoft.Microsoft365"                 -Label "Microsoft 365"             -Source "msstore"
 
 # ========================
 # Dev Setup
@@ -182,12 +196,17 @@ Write-Host ""
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
 Write-Host "  Dev Setup" -ForegroundColor White
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
-Install-WingetApp -Id "Git.Git"                            -Label "Git"
-Install-WingetApp -Id "Oven-sh.Bun"                        -Label "Bun"
-Install-WingetApp -Id "Volta.Volta"                        -Label "Volta"
-Install-WingetApp -Id "Notepad++.Notepad++"                -Label "Notepad++"
-Install-WingetApp -Id "Google.Antigravity"                 -Label "Google Antigravity"
-Install-WingetApp -Id "Microsoft.VisualStudioCode"         -Label "VS Code"
+Install-WingetApp -Id "Git.Git"                                -Label "Git"
+Install-WingetApp -Id "GitHub.cli"                             -Label "GitHub CLI"
+Install-WingetApp -Id "Oven-sh.Bun"                            -Label "Bun"
+Install-WingetApp -Id "Volta.Volta"                            -Label "Volta"
+Install-WingetApp -Id "Notepad++.Notepad++"                    -Label "Notepad++"
+Install-WingetApp -Id "Google.Antigravity"                     -Label "Google Antigravity"
+Install-WingetApp -Id "Microsoft.VisualStudioCode"             -Label "VS Code"
+Install-WingetApp -Id "Microsoft.WindowsTerminal"              -Label "Windows Terminal"
+Install-WingetApp -Id "Microsoft.PowerShell"                   -Label "PowerShell 7"
+Install-WingetApp -Id "Python.Python.3.11"                     -Label "Python 3.11"               -Version "3.11"
+Install-WingetApp -Id "JanDeDobbeleer.OhMyPosh"               -Label "Oh My Posh"
 
 # Install Node via Volta
 $env:PATH += ";$env:LOCALAPPDATA\Volta\bin"
@@ -200,6 +219,24 @@ if (Get-Command volta -ErrorAction SilentlyContinue) {
 } else {
     Write-Host "[$timestamp] ❌ Volta not found — skipping Node install." -ForegroundColor Red
     $script:results += [PSCustomObject]@{ App = "Node.js (via Volta)"; Status = "Failed" }
+}
+
+# Configure Oh My Posh for PowerShell profile
+$timestamp = Get-Date -Format "HH:mm:ss"
+if (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {
+    $profileDir = Split-Path $PROFILE
+    if (-not (Test-Path $profileDir)) { New-Item -ItemType Directory -Path $profileDir -Force | Out-Null }
+    $ompInit = 'oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\jandedobbeleer.omp.json" | Invoke-Expression'
+    if (-not (Test-Path $PROFILE) -or -not (Select-String -Path $PROFILE -SimpleMatch "oh-my-posh" -Quiet)) {
+        Add-Content -Path $PROFILE -Value "`n# Oh My Posh`n$ompInit"
+        Write-Host "[$timestamp] ✅ Oh My Posh configured in PowerShell profile." -ForegroundColor Green
+    } else {
+        Write-Host "[$timestamp] ⏭  Oh My Posh already configured in profile — skipping." -ForegroundColor Yellow
+    }
+    $script:results += [PSCustomObject]@{ App = "Oh My Posh (profile)"; Status = "Installed" }
+} else {
+    Write-Host "[$timestamp] ⚠️  Oh My Posh not found in PATH — skipping profile config." -ForegroundColor Yellow
+    $script:results += [PSCustomObject]@{ App = "Oh My Posh (profile)"; Status = "Failed" }
 }
 
 # ========================
