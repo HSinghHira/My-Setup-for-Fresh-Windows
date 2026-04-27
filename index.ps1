@@ -25,9 +25,9 @@ $ErrorActionPreference = 'Continue'
 # ─────────────────────────────────────────────────────────────────────────────
 
 $startTime = Get-Date
-$logRoot = [Environment]::GetFolderPath('Desktop')
-$logFile = Join-Path $logRoot ("setup-log-" + $startTime.ToString('yyyy-MM-dd_HH-mm') + ".txt")
-Start-Transcript -Path $logFile -Append | Out-Null
+$logRoot   = [Environment]::GetFolderPath('Desktop')
+$logFile   = Join-Path $logRoot ("setup-log-" + $startTime.ToString('yyyy-MM-dd_HH-mm') + ".txt")
+Start-Transcript -Path $logFile | Out-Null
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Temp-file tracker  (cleaned up at the end)
@@ -36,40 +36,55 @@ Start-Transcript -Path $logFile -Append | Out-Null
 $script:tempFiles = [System.Collections.Generic.List[string]]::new()
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Section 1 — Admin Check
+#  Section 1 — Admin Check  (auto-elevates via UAC if not already admin)
 # ─────────────────────────────────────────────────────────────────────────────
 
-if (-not $isAdmin) {
-    Write-Host "⚠️  Not running as Administrator — requesting elevation …" -ForegroundColor Yellow
-    $psArgs = "-ExecutionPolicy Bypass -File `"$PSCommandPath`""
-    # Forward any switches the user passed
-    if ($DryRun)           { $psArgs += " -DryRun" }
-    if ($SkipRuntimes)     { $psArgs += " -SkipRuntimes" }
-    if ($SkipCoreApps)     { $psArgs += " -SkipCoreApps" }
-    if ($SkipDevSetup)     { $psArgs += " -SkipDevSetup" }
-    # ... add others as needed
+# FIX: Initialise $isAdmin before assignment so Set-StrictMode doesn't throw
+$isAdmin = $false
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+    [Security.Principal.WindowsBuiltInRole]::Administrator
+)
 
+if (-not $isAdmin) {
+    Write-Host ""
+    Write-Host "⚠️  Not running as Administrator — requesting elevation via UAC …" -ForegroundColor Yellow
+    Write-Host ""
+
+    # Build argument string, forwarding any switches the user passed
+    $psArgs = "-ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    if ($DryRun)           { $psArgs += ' -DryRun' }
+    if ($SkipRuntimes)     { $psArgs += ' -SkipRuntimes' }
+    if ($SkipCoreApps)     { $psArgs += ' -SkipCoreApps' }
+    if ($SkipSystemUtils)  { $psArgs += ' -SkipSystemUtils' }
+    if ($SkipProductivity) { $psArgs += ' -SkipProductivity' }
+    if ($SkipDevSetup)     { $psArgs += ' -SkipDevSetup' }
+    if ($SkipStoreApps)    { $psArgs += ' -SkipStoreApps' }
+    if ($SkipExtensions)   { $psArgs += ' -SkipExtensions' }
+    if ($SkipDebloat)      { $psArgs += ' -SkipDebloat' }
+    if ($SkipEUPrivacy)    { $psArgs += ' -SkipEUPrivacy' }
+
+    try { Stop-Transcript | Out-Null } catch {}
     Start-Process powershell.exe -ArgumentList $psArgs -Verb RunAs
     exit
 }
-
-# After admin check...
-Clear-Host
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Section 2 — Result Tracking
 # ─────────────────────────────────────────────────────────────────────────────
 
-$script:results = @()
+# FIX: Use a Generic List instead of array += to avoid O(n²) rebuilds
+$script:results = [System.Collections.Generic.List[PSCustomObject]]::new()
 
 function Add-Result {
     param([string]$App, [string]$Status)
-    $script:results += [PSCustomObject]@{ App = $App; Status = $Status }
+    $script:results.Add([PSCustomObject]@{ App = $App; Status = $Status })
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Banner
+#  Clear terminal then show banner
 # ─────────────────────────────────────────────────────────────────────────────
+
+Clear-Host
 
 Write-Host ""
 Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
@@ -77,7 +92,6 @@ Write-Host "║         Windows 11 Setup Script — Master Edition             �
 Write-Host "║                  by Harman Singh Hira                        ║" -ForegroundColor Cyan
 Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Dry-Run Notice
@@ -121,7 +135,7 @@ function Install-WingetApp {
         [string]$Id,
         [string]$Label,
         [string]$Version = '',
-        [string]$Source = 'winget'
+        [string]$Source  = 'winget'
     )
 
     $ts = Get-Timestamp
@@ -143,11 +157,11 @@ function Install-WingetApp {
     }
 
     $installArgs = @('install', '--id', $Id, '--exact', '--silent',
-        '--accept-package-agreements', '--accept-source-agreements',
-        '--source', $Source)
+                     '--accept-package-agreements', '--accept-source-agreements',
+                     '--source', $Source)
     if ($Version) { $installArgs += @('--version', $Version) }
 
-    $attempt = 0
+    $attempt   = 0
     $succeeded = $false
 
     while ($attempt -lt 2 -and -not $succeeded) {
@@ -156,10 +170,10 @@ function Install-WingetApp {
         $ec = $LASTEXITCODE
 
         switch ($ec) {
-            0 { $succeeded = $true }
-            -1978335189 { Write-Host "[$( Get-Timestamp )]    ⏭  No upgrade available."  -ForegroundColor DarkGray; Add-Result -App $Label -Status 'Skipped'; return }
-            -1978335150 { Write-Host "[$( Get-Timestamp )]    ⏭  Already installed."     -ForegroundColor DarkGray; Add-Result -App $Label -Status 'Skipped'; return }
-            -1978335212 { Write-Host "[$( Get-Timestamp )]    🔍 Not found in source."   -ForegroundColor Yellow; Add-Result -App $Label -Status 'Not Found'; return }
+            0           { $succeeded = $true }
+            -1978335189 { Write-Host "[$( Get-Timestamp )]    ⏭  No upgrade available."  -ForegroundColor DarkGray; Add-Result -App $Label -Status 'Skipped';   return }
+            -1978335150 { Write-Host "[$( Get-Timestamp )]    ⏭  Already installed."     -ForegroundColor DarkGray; Add-Result -App $Label -Status 'Skipped';   return }
+            -1978335212 { Write-Host "[$( Get-Timestamp )]    🔍 Not found in source."   -ForegroundColor Yellow;   Add-Result -App $Label -Status 'Not Found'; return }
             default {
                 if ($attempt -lt 2) {
                     Write-Host "[$( Get-Timestamp )]    ⚠️  Attempt $attempt failed (exit $ec). Retrying in 5s …" -ForegroundColor Yellow
@@ -172,8 +186,7 @@ function Install-WingetApp {
     if ($succeeded) {
         Write-Host "[$( Get-Timestamp )]    ✅ Installed." -ForegroundColor Green
         Add-Result -App $Label -Status 'Installed'
-    }
-    else {
+    } else {
         Write-Host "[$( Get-Timestamp )]    ❌ Failed after 2 attempts." -ForegroundColor Red
         Add-Result -App $Label -Status 'Failed'
     }
@@ -181,24 +194,29 @@ function Install-WingetApp {
 
 # ── Install-AppxFromStore ─────────────────────────────────────────────────────
 # Tries tplant REST API first, falls back to AdGuard HTML scrape.
-# Always checks if already installed before attempting anything.
+# FIX: Get-AppxPackage -AllUsers throws Access Denied on some machines even when
+#      elevated. Now falls back gracefully to current-user query.
 
 function Install-AppxFromStore {
     param(
         [string]$ProductId,
         [string]$Label,
-        # Known AppX package name pattern to detect if already installed
-        # e.g. '*Edison*' for Edison Mail. Defaults to a broad label match.
         [string]$PackageNamePattern = ''
     )
 
-    $ts = Get-Timestamp
+    $ts       = Get-Timestamp
     $storeUrl = "https://apps.microsoft.com/detail/$ProductId"
 
     # ── Already-installed check ───────────────────────────────────────────────
     $pattern = if ($PackageNamePattern) { $PackageNamePattern } else { "*$Label*" }
-    $existing = Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -like $pattern }
+
+    # FIX: -AllUsers can throw UnauthorizedAccessException even as admin; fall back to current user
+    $existing = try {
+        Get-AppxPackage -AllUsers -ErrorAction Stop | Where-Object { $_.Name -like $pattern }
+    } catch {
+        Get-AppxPackage -ErrorAction SilentlyContinue | Where-Object { $_.Name -like $pattern }
+    }
+
     if ($existing) {
         Write-Host "[$ts] ⏭  $Label already installed — skipping." -ForegroundColor DarkGray
         Add-Result -App $Label -Status 'Skipped'
@@ -218,17 +236,17 @@ function Install-AppxFromStore {
 
     # ── Source 1: tplant REST API ─────────────────────────────────────────────
     try {
-        $apiUrl = "https://msft-store.tplant.com.au/api/Packages?id=$storeUrl&environment=Production&inputform=url"
-        $pkgs = Invoke-RestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
+        $apiUrl  = "https://msft-store.tplant.com.au/api/Packages?id=$storeUrl&environment=Production&inputform=url"
+        $pkgs    = Invoke-RestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
 
         if ($pkgs -and @($pkgs).Count -gt 0) {
             $arch = Get-ArchTag
-            $pkg = $pkgs | Where-Object { $_.packagefilename -like '*x64*' } | Select-Object -First 1
+            $pkg  = $pkgs | Where-Object { $_.packagefilename -like '*x64*' } | Select-Object -First 1
             if (-not $pkg) { $pkg = $pkgs | Where-Object { $_.packagefilename -like "*$arch*" } | Select-Object -First 1 }
             if (-not $pkg) { $pkg = $pkgs | Select-Object -First 1 }
 
             $fileName = $pkg.packagefilename
-            $outPath = Resolve-UniqueFilePath (Join-Path $env:TEMP $fileName)
+            $outPath  = Resolve-UniqueFilePath (Join-Path $env:TEMP $fileName)
 
             Write-Host "[$( Get-Timestamp )]    ⬇  tplant → $fileName" -ForegroundColor DarkCyan
             Invoke-WebRequest -Uri $pkg.packagedownloadurl -OutFile $outPath -UseBasicParsing -ErrorAction Stop
@@ -240,8 +258,7 @@ function Install-AppxFromStore {
             Add-Result -App $Label -Status 'Installed'
             $success = $true
         }
-    }
-    catch {
+    } catch {
         Write-Host "[$( Get-Timestamp )]    ⚠️  tplant failed: $($_.Exception.Message)" -ForegroundColor Yellow
     }
 
@@ -249,26 +266,26 @@ function Install-AppxFromStore {
     if (-not $success) {
         try {
             Write-Host "[$( Get-Timestamp )]    🔄 Falling back to AdGuard …" -ForegroundColor Yellow
-            $body = "type=url&url=$storeUrl&ring=Retail"
+            $body     = "type=url&url=$storeUrl&ring=Retail"
             $response = Invoke-WebRequest -UseBasicParsing -Method POST `
-                -Uri 'https://store.rg-adguard.net/api/GetFiles' `
-                -Body $body -ContentType 'application/x-www-form-urlencoded' -ErrorAction Stop
+                            -Uri 'https://store.rg-adguard.net/api/GetFiles' `
+                            -Body $body -ContentType 'application/x-www-form-urlencoded' -ErrorAction Stop
 
-            $arch = Get-ArchTag
+            $arch  = Get-ArchTag
             $links = $response.Links |
-            Where-Object { $_ -like '*.appx*' -or $_ -like '*.appxbundle*' -or
-                $_ -like '*.msix*' -or $_ -like '*.msixbundle*' } |
-            Where-Object { $_ -like '*_neutral_*' -or $_ -like "*_${arch}_*" } |
-            Select-String -Pattern '(?<=a href=").+(?=" r)'
+                     Where-Object { $_ -like '*.appx*' -or $_ -like '*.appxbundle*' -or
+                                    $_ -like '*.msix*'  -or $_ -like '*.msixbundle*' } |
+                     Where-Object { $_ -like '*_neutral_*' -or $_ -like "*_${arch}_*" } |
+                     Select-String -Pattern '(?<=a href=").+(?=" r)'
 
             $urls = @($links | ForEach-Object { $_.Matches.Value })
             if ($urls.Count -eq 0) { throw "No packages found." }
 
             foreach ($url in $urls) {
                 try {
-                    $req = Invoke-WebRequest -Uri $url -UseBasicParsing -ErrorAction Stop
+                    $req      = Invoke-WebRequest -Uri $url -UseBasicParsing -ErrorAction Stop
                     $fileName = ($req.Headers['Content-Disposition'] |
-                        Select-String -Pattern '(?<=filename=).+').Matches.Value
+                                 Select-String -Pattern '(?<=filename=).+').Matches.Value
                     if (-not $fileName) { $fileName = Split-Path $url -Leaf }
 
                     $outPath = Resolve-UniqueFilePath (Join-Path $env:TEMP $fileName)
@@ -281,14 +298,12 @@ function Install-AppxFromStore {
                     Write-Host "[$( Get-Timestamp )]    ✅ $Label installed (AdGuard)." -ForegroundColor Green
                     Add-Result -App $Label -Status 'Installed'
                     $success = $true
-                    break   # ← stop after first successful package
-                }
-                catch {
+                    break
+                } catch {
                     Write-Host "[$( Get-Timestamp )]    ⚠️  Package failed, trying next …" -ForegroundColor Yellow
                 }
             }
-        }
-        catch {
+        } catch {
             Write-Host "[$( Get-Timestamp )]    ❌ AdGuard also failed: $($_.Exception.Message)" -ForegroundColor Red
         }
     }
@@ -298,34 +313,68 @@ function Install-AppxFromStore {
     }
 }
 
+# ── Invoke-IdeCli ─────────────────────────────────────────────────────────────
+# FIX: The root cause of VS Code / Antigravity windows opening during extension
+#      installs is that the bare 'code' / 'antigravity' command in PATH resolves
+#      to the GUI .exe on some installs.  We now:
+#        1. Prefer the .cmd shim  (code.cmd / antigravity.cmd) which is the
+#           proper headless CLI wrapper installed by both apps.
+#        2. Fall back to Start-Process with -WindowStyle Hidden + -Wait so even
+#           if the .exe is invoked it never produces a visible window.
+#      Returns the process exit code.
+
+function Invoke-IdeCli {
+    param(
+        [string]$Cli,
+        [string[]]$Arguments
+    )
+
+    # Prefer the .cmd shim — it is the true headless CLI and never opens a window
+    $cmdShim = (Get-Command "$Cli.cmd" -ErrorAction SilentlyContinue)?.Source
+    if ($cmdShim) {
+        # Run via cmd.exe so the .cmd file executes correctly and output is suppressed
+        $proc = Start-Process -FilePath 'cmd.exe' `
+                    -ArgumentList (@('/c', "`"$cmdShim`"") + $Arguments) `
+                    -WindowStyle Hidden -PassThru -Wait -ErrorAction Stop
+        return $proc.ExitCode
+    }
+
+    # Fallback: use the bare CLI with Hidden window style
+    $exePath = (Get-Command $Cli -ErrorAction SilentlyContinue)?.Source
+    if (-not $exePath) { return 1 }
+
+    $proc = Start-Process -FilePath $exePath `
+                -ArgumentList $Arguments `
+                -WindowStyle Hidden -PassThru -Wait -ErrorAction Stop
+    return $proc.ExitCode
+}
+
 # ── Install-VSExtensions ──────────────────────────────────────────────────────
-# For Antigravity: tries --install-extension first.
-# If that fails, downloads the .vsix from the VS Marketplace and installs it.
 
 function Install-VSExtensions {
     param(
         [string[]]$EnabledExtensions,
-        [string[]]$DisabledExtensions = @(),
+        [string[]]$DisabledExtensions   = @(),
         [string[]]$VSCodeOnlyExtensions = @()
     )
 
     $ides = @(
-        @{ Name = 'VS Code'; Cli = 'code'; IsAntigravity = $false },
-        @{ Name = 'Antigravity'; Cli = 'antigravity'; IsAntigravity = $true }
+        @{ Name = 'VS Code';     Cli = 'code';        IsAntigravity = $false },
+        @{ Name = 'Antigravity'; Cli = 'antigravity';  IsAntigravity = $true  }
     )
 
-    # All extensions we need to process per IDE
     $allExtensions = @(
         $EnabledExtensions  | ForEach-Object { [PSCustomObject]@{ Id = $_; Disable = $false } }
-        $DisabledExtensions | ForEach-Object { [PSCustomObject]@{ Id = $_; Disable = $true } }
+        $DisabledExtensions | ForEach-Object { [PSCustomObject]@{ Id = $_; Disable = $true  } }
     )
 
     foreach ($ide in $ides) {
-        $cli = $ide.Cli
-        $ideName = $ide.Name
+        $cli           = $ide.Cli
+        $ideName       = $ide.Name
         $isAntigravity = $ide.IsAntigravity
 
-        if (-not (Get-Command $cli -ErrorAction SilentlyContinue)) {
+        if (-not (Get-Command $cli -ErrorAction SilentlyContinue) -and
+            -not (Get-Command "$cli.cmd" -ErrorAction SilentlyContinue)) {
             Write-Host "[$( Get-Timestamp )]    ⚠️  $ideName CLI ('$cli') not found in PATH — skipping." -ForegroundColor Yellow
             continue
         }
@@ -333,15 +382,34 @@ function Install-VSExtensions {
         Write-Host ""
         Write-Host "[$( Get-Timestamp )] 🧩 Installing extensions into $ideName …" -ForegroundColor Cyan
 
-        # Get currently installed extensions (case-insensitive list)
-        # Filter to strings only — Antigravity emits ErrorRecord warnings mixed into stdout
-        $installedList = @(& $cli --list-extensions 2>&1 |
-            Where-Object { $_ -is [string] } |
-            ForEach-Object { $_.ToLower() })
+        # FIX: Use Invoke-IdeCli (hidden window) for --list-extensions too
+        $rawList = @()
+        try {
+            # Capture output by redirecting to a temp file to avoid any window
+            $tmpOut = [System.IO.Path]::GetTempFileName()
+            $script:tempFiles.Add($tmpOut)
+
+            $cmdShim = (Get-Command "$cli.cmd" -ErrorAction SilentlyContinue)?.Source
+            if ($cmdShim) {
+                $proc = Start-Process -FilePath 'cmd.exe' `
+                            -ArgumentList "/c `"$cmdShim`" --list-extensions > `"$tmpOut`" 2>&1" `
+                            -WindowStyle Hidden -PassThru -Wait
+            } else {
+                $exePath = (Get-Command $cli -ErrorAction SilentlyContinue)?.Source
+                $proc = Start-Process -FilePath $exePath `
+                            -ArgumentList '--list-extensions' `
+                            -RedirectStandardOutput $tmpOut `
+                            -WindowStyle Hidden -PassThru -Wait
+            }
+            $rawList = Get-Content $tmpOut -ErrorAction SilentlyContinue
+        } catch {}
+
+        $installedList = @($rawList | Where-Object { $_ -is [string] -and $_ -match '\.' } |
+                           ForEach-Object { $_.Trim().ToLower() })
 
         foreach ($ext in $allExtensions) {
             $extId = $ext.Id
-            $ts = Get-Timestamp
+            $ts    = Get-Timestamp
 
             # Skip VS Code-only extensions silently in Antigravity
             if ($isAntigravity -and ($VSCodeOnlyExtensions -icontains $extId)) { continue }
@@ -353,20 +421,16 @@ function Install-VSExtensions {
                 continue
             }
 
-            # ── Already installed? ────────────────────────────────────────────
+            # Already installed?
             if ($installedList -icontains $extId.ToLower()) {
                 Write-Host "[$ts]    ⏭  $extId already in $ideName." -ForegroundColor DarkGray
                 Add-Result -App "$ideName : $extId" -Status 'Skipped'
-            }
-            else {
-                # ── Try standard install ──────────────────────────────────────
-                $proc = Start-Process -FilePath $cli `
-                    -ArgumentList "--install-extension", $extId, "--force", "--log", "off" `
-                    -WindowStyle Hidden -PassThru -Wait
-                $ec = $proc.ExitCode
-                $ec = $LASTEXITCODE
+            } else {
+                # FIX: Use Invoke-IdeCli — hidden window, no GUI popup
+                # Drop --force since we already confirmed it's not installed
+                $ec = Invoke-IdeCli -Cli $cli -Arguments @('--install-extension', $extId)
 
-                # ── VSIX fallback for Antigravity ─────────────────────────────
+                # VSIX fallback for Antigravity
                 if ($ec -ne 0 -and $isAntigravity) {
                     Write-Host "[$ts]    ⚠️  Marketplace install failed — trying VSIX download …" -ForegroundColor Yellow
                     $ec = Install-ExtensionViaVsix -Cli $cli -ExtId $extId -IdeName $ideName
@@ -375,19 +439,16 @@ function Install-VSExtensions {
                 if ($ec -eq 0) {
                     Write-Host "[$ts]    ✅ $extId → $ideName" -ForegroundColor Green
                     Add-Result -App "$ideName : $extId" -Status 'Installed'
-                }
-                else {
+                } else {
                     Write-Host "[$ts]    ❌ $extId failed in $ideName (exit $ec)" -ForegroundColor Red
                     Add-Result -App "$ideName : $extId" -Status 'Failed'
-                    continue   # don't try to disable an extension that failed to install
+                    continue
                 }
             }
 
-            # ── Disable if flagged (runs for both just-installed and pre-existing) ──
+            # Disable if flagged
             if ($ext.Disable) {
-                Start-Process -FilePath $cli `
-                    -ArgumentList "--disable-extension", $extId, "--log", "off" `
-                    -WindowStyle Hidden -Wait
+                Invoke-IdeCli -Cli $cli -Arguments @('--disable-extension', $extId) | Out-Null
                 Write-Host "[$ts]    🔕 $extId disabled in $ideName" -ForegroundColor DarkGray
             }
         }
@@ -406,29 +467,27 @@ function Install-ExtensionViaVsix {
     )
 
     try {
-        $parts = $ExtId -split '\.'
+        $parts     = $ExtId -split '\.'
         $publisher = $parts[0]
-        $extName = $parts[1..($parts.Count - 1)] -join '.'
+        $extName   = $parts[1..($parts.Count - 1)] -join '.'
 
-        # Query the VS Marketplace REST API for the latest version
-        $apiUrl = 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery'
-        $body = @{
+        $apiUrl  = 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery'
+        $body    = @{
             filters = @(@{
-                    criteria = @(@{ filterType = 7; value = $ExtId })
-                })
-            flags   = 914
+                criteria = @(@{ filterType = 7; value = $ExtId })
+            })
+            flags = 914
         } | ConvertTo-Json -Depth 10
 
         $response = Invoke-RestMethod -Uri $apiUrl -Method POST -Body $body `
-            -ContentType 'application/json' `
-            -Headers @{ 'Accept' = 'application/json;api-version=7.1-preview.1' } `
-            -ErrorAction Stop
+                        -ContentType 'application/json' `
+                        -Headers @{ 'Accept' = 'application/json;api-version=7.1-preview.1' } `
+                        -ErrorAction Stop
 
         $version = $response.results[0].extensions[0].versions[0].version
         if (-not $version) { throw "Could not resolve version for $ExtId" }
 
-        # Build the direct download URL
-        $vsixUrl = "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/$publisher/vsextensions/$extName/$version/vspackage"
+        $vsixUrl  = "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/$publisher/vsextensions/$extName/$version/vspackage"
         $vsixPath = Join-Path $env:TEMP "$publisher.$extName-$version.vsix"
         $vsixPath = Resolve-UniqueFilePath $vsixPath
 
@@ -436,11 +495,10 @@ function Install-ExtensionViaVsix {
         Invoke-WebRequest -Uri $vsixUrl -OutFile $vsixPath -UseBasicParsing -ErrorAction Stop
         $script:tempFiles.Add($vsixPath)
 
-        & $Cli --install-extension $vsixPath --force 2>&1 | Out-Null
-        return $LASTEXITCODE
+        # FIX: Use Invoke-IdeCli — no window
+        return (Invoke-IdeCli -Cli $Cli -Arguments @('--install-extension', $vsixPath))
 
-    }
-    catch {
+    } catch {
         Write-Host "[$( Get-Timestamp )]       VSIX fallback failed: $($_.Exception.Message)" -ForegroundColor Red
         return 1
     }
@@ -466,8 +524,7 @@ function Set-RegistryValue {
         }
         Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -Force
         Write-Host "[$( Get-Timestamp )]    ✅ $Name = $Value" -ForegroundColor DarkGreen
-    }
-    catch {
+    } catch {
         Write-Host "[$( Get-Timestamp )]    ⚠️  Could not set [$Name]: $($_.Exception.Message)" -ForegroundColor Yellow
     }
 }
@@ -487,22 +544,20 @@ function Remove-AppxIfPresent {
     }
 
     try {
-        $pkg = Get-AppxPackage -Name $PackageName -ErrorAction SilentlyContinue
+        $pkg  = Get-AppxPackage -Name $PackageName -ErrorAction SilentlyContinue
         $prov = Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue |
-        Where-Object { $_.DisplayName -like $PackageName }
+                Where-Object { $_.DisplayName -like $PackageName }
 
-        if ($pkg) { $pkg  | Remove-AppxPackage -ErrorAction SilentlyContinue }
+        if ($pkg)  { $pkg  | Remove-AppxPackage -ErrorAction SilentlyContinue }
         if ($prov) { $prov | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Out-Null }
 
         if ($pkg -or $prov) {
             Write-Host "[$ts]    ✅ Removed $Label" -ForegroundColor Green
             Add-Result -App "Removed: $Label" -Status 'Installed'
-        }
-        else {
+        } else {
             Write-Host "[$ts]    ⏭  $Label not found — skipping." -ForegroundColor DarkGray
         }
-    }
-    catch {
+    } catch {
         Write-Host "[$ts]    ❌ Failed to remove ${Label}: $($_.Exception.Message)" -ForegroundColor Red
         Add-Result -App "Removed: $Label" -Status 'Failed'
     }
@@ -538,8 +593,7 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipRuntimes) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping runtimes (flag set)." -ForegroundColor DarkGray
-}
-else {
+} else {
     Install-WingetApp -Id 'Microsoft.VCRedist.2015+.x64'      -Label 'VC++ Redistributable 2015+ (x64)'
     Install-WingetApp -Id 'Microsoft.DotNet.DesktopRuntime.5'  -Label '.NET Desktop Runtime 5'
     Install-WingetApp -Id 'Microsoft.DotNet.DesktopRuntime.6'  -Label '.NET Desktop Runtime 6'
@@ -558,8 +612,7 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipCoreApps) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping core apps (flag set)." -ForegroundColor DarkGray
-}
-else {
+} else {
     Install-WingetApp -Id '7zip.7zip'      -Label '7-Zip'
     Install-WingetApp -Id 'Daum.PotPlayer' -Label 'PotPlayer'
     Install-WingetApp -Id 'ShareX.ShareX'  -Label 'ShareX'
@@ -577,8 +630,7 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipSystemUtils) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping system utilities (flag set)." -ForegroundColor DarkGray
-}
-else {
+} else {
     Install-WingetApp -Id 'xanderfrangos.twinkletray'   -Label 'TwinkleTray'
     Install-WingetApp -Id 'File-New-Project.EarTrumpet' -Label 'EarTrumpet'
     Install-WingetApp -Id 'CrystalRich.LockHunter'      -Label 'LockHunter'
@@ -597,8 +649,7 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipProductivity) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping productivity apps (flag set)." -ForegroundColor DarkGray
-}
-else {
+} else {
     Install-WingetApp -Id 'PDFgear.PDFgear'                    -Label 'PDFgear'
     Install-WingetApp -Id 'JavadMotallebi.NeatDownloadManager' -Label 'Neat Download Manager'
     Install-WingetApp -Id 'flux.flux'                          -Label 'f.lux'
@@ -618,8 +669,7 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipDevSetup) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping dev setup (flag set)." -ForegroundColor DarkGray
-}
-else {
+} else {
     Install-WingetApp -Id 'Git.Git'                    -Label 'Git'
     Install-WingetApp -Id 'GitHub.cli'                 -Label 'GitHub CLI'
     Install-WingetApp -Id 'Oven-sh.Bun'                -Label 'Bun'
@@ -631,9 +681,9 @@ else {
     Install-WingetApp -Id 'Microsoft.PowerShell'       -Label 'PowerShell 7'
     Install-WingetApp -Id 'Python.Python.3.11'         -Label 'Python 3.11'
 
-    # Refresh PATH so Volta are immediately available
+    # Refresh PATH so Volta is immediately available
     $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +
-    [System.Environment]::GetEnvironmentVariable('PATH', 'User')
+                [System.Environment]::GetEnvironmentVariable('PATH', 'User')
 
     # ── Node via Volta ────────────────────────────────────────────────────────
     if (Get-Command volta -ErrorAction SilentlyContinue) {
@@ -641,8 +691,7 @@ else {
         volta install node 2>&1 | Out-Null
         Write-Host "[$( Get-Timestamp )]    ✅ Node installed via Volta." -ForegroundColor Green
         Add-Result -App 'Node (via Volta)' -Status 'Installed'
-    }
-    else {
+    } else {
         Write-Host "[$( Get-Timestamp )]    ⚠️  Volta not in PATH — skipping Node install." -ForegroundColor Yellow
     }
 }
@@ -658,13 +707,11 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipStoreApps) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping Store apps (flag set)." -ForegroundColor DarkGray
-}
-else {
+} else {
     Install-WingetApp -Id '9PKTQ5699M62' -Label 'iCloud' -Source 'msstore'
     Install-WingetApp -Id '9n7jsxc1sjk6' -Label 'Blip'   -Source 'msstore'
 
     # Edison Mail — unlisted on Store, use dual-source AppX fallback
-    # PackageNamePattern matches the known AppX name to detect if already installed
     Install-AppxFromStore -ProductId '9p64kgf20h0t' -Label 'Edison Mail' -PackageNamePattern '*Edison*'
 }
 
@@ -679,12 +726,11 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 # Refresh PATH so freshly installed IDEs are visible
 $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +
-[System.Environment]::GetEnvironmentVariable('PATH', 'User')
+            [System.Environment]::GetEnvironmentVariable('PATH', 'User')
 
 if ($SkipExtensions) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping extensions (flag set)." -ForegroundColor DarkGray
-}
-else {
+} else {
 
     # ── Extensions installed and left ENABLED ─────────────────────────────────
     $enabledExtensions = @(
@@ -773,8 +819,8 @@ else {
     )
 
     Install-VSExtensions `
-        -EnabledExtensions  $enabledExtensions  `
-        -DisabledExtensions $disabledExtensions `
+        -EnabledExtensions    $enabledExtensions  `
+        -DisabledExtensions   $disabledExtensions `
         -VSCodeOnlyExtensions $vscodeOnlyExtensions
 }
 
@@ -789,81 +835,81 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipDebloat) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping debloat (flag set)." -ForegroundColor DarkGray
-}
-else {
+} else {
 
     # Create restore point before debloat
+    # Note: Checkpoint-Computer may fail on Windows 11 Home if System Restore is
+    # disabled by default — this is a known Windows limitation and is non-fatal.
     Write-Host "[$( Get-Timestamp )] 🛡  Creating system restore point …" -ForegroundColor DarkCyan
     try {
         Enable-ComputerRestore -Drive "$env:SystemDrive" -ErrorAction SilentlyContinue
         Checkpoint-Computer -Description 'Before Windows 11 Setup Script Debloat' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop
         Write-Host "[$( Get-Timestamp )]    ✅ Restore point created." -ForegroundColor Green
-    }
-    catch {
-        Write-Host "[$( Get-Timestamp )]    ⚠️  Could not create restore point: $($_.Exception.Message)" -ForegroundColor Yellow
+    } catch {
+        Write-Host "[$( Get-Timestamp )]    ⚠️  Could not create restore point (non-fatal): $($_.Exception.Message)" -ForegroundColor Yellow
     }
 
     # ── 12A — Bloat App Removal ───────────────────────────────────────────────
     Write-Host ""
     Write-Host "[$( Get-Timestamp )] 🗑  12A — Removing bloat apps …" -ForegroundColor Cyan
 
-    Remove-AppxIfPresent -PackageName 'Microsoft.BingNews'                  -Label 'MSN News'
-    Remove-AppxIfPresent -PackageName 'Microsoft.BingWeather'               -Label 'MSN Weather'
-    Remove-AppxIfPresent -PackageName 'Microsoft.GamingApp'                 -Label 'Xbox Gaming App'
-    Remove-AppxIfPresent -PackageName 'Microsoft.XboxGameOverlay'           -Label 'Xbox Game Overlay'
-    Remove-AppxIfPresent -PackageName 'Microsoft.XboxGamingOverlay'         -Label 'Xbox Gaming Overlay'
-    Remove-AppxIfPresent -PackageName 'Microsoft.XboxIdentityProvider'      -Label 'Xbox Identity Provider'
-    Remove-AppxIfPresent -PackageName 'Microsoft.XboxSpeechToTextOverlay'   -Label 'Xbox Speech Overlay'
-    Remove-AppxIfPresent -PackageName 'Microsoft.Xbox.TCUI'                 -Label 'Xbox TCUI'
-    Remove-AppxIfPresent -PackageName 'Microsoft.ZuneMusic'                 -Label 'Groove Music'
-    Remove-AppxIfPresent -PackageName 'Microsoft.ZuneVideo'                 -Label 'Movies & TV'
-    Remove-AppxIfPresent -PackageName 'Microsoft.People'                    -Label 'People'
-    Remove-AppxIfPresent -PackageName 'Microsoft.WindowsMaps'               -Label 'Maps'
-    Remove-AppxIfPresent -PackageName 'Microsoft.WindowsFeedbackHub'        -Label 'Feedback Hub'
-    Remove-AppxIfPresent -PackageName 'Microsoft.GetHelp'                   -Label 'Get Help'
-    Remove-AppxIfPresent -PackageName 'Microsoft.Getstarted'                -Label 'Get Started / Tips'
-    Remove-AppxIfPresent -PackageName 'Microsoft.549981C3F5F10'             -Label 'Cortana'
-    Remove-AppxIfPresent -PackageName 'MicrosoftTeams'                      -Label 'Microsoft Teams (personal)'
+    Remove-AppxIfPresent -PackageName 'Microsoft.BingNews'                     -Label 'MSN News'
+    Remove-AppxIfPresent -PackageName 'Microsoft.BingWeather'                  -Label 'MSN Weather'
+    Remove-AppxIfPresent -PackageName 'Microsoft.GamingApp'                    -Label 'Xbox Gaming App'
+    Remove-AppxIfPresent -PackageName 'Microsoft.XboxGameOverlay'              -Label 'Xbox Game Overlay'
+    Remove-AppxIfPresent -PackageName 'Microsoft.XboxGamingOverlay'            -Label 'Xbox Gaming Overlay'
+    Remove-AppxIfPresent -PackageName 'Microsoft.XboxIdentityProvider'         -Label 'Xbox Identity Provider'
+    Remove-AppxIfPresent -PackageName 'Microsoft.XboxSpeechToTextOverlay'      -Label 'Xbox Speech Overlay'
+    Remove-AppxIfPresent -PackageName 'Microsoft.Xbox.TCUI'                    -Label 'Xbox TCUI'
+    Remove-AppxIfPresent -PackageName 'Microsoft.ZuneMusic'                    -Label 'Groove Music'
+    Remove-AppxIfPresent -PackageName 'Microsoft.ZuneVideo'                    -Label 'Movies & TV'
+    Remove-AppxIfPresent -PackageName 'Microsoft.People'                       -Label 'People'
+    Remove-AppxIfPresent -PackageName 'Microsoft.WindowsMaps'                  -Label 'Maps'
+    Remove-AppxIfPresent -PackageName 'Microsoft.WindowsFeedbackHub'           -Label 'Feedback Hub'
+    Remove-AppxIfPresent -PackageName 'Microsoft.GetHelp'                      -Label 'Get Help'
+    Remove-AppxIfPresent -PackageName 'Microsoft.Getstarted'                   -Label 'Get Started / Tips'
+    Remove-AppxIfPresent -PackageName 'Microsoft.549981C3F5F10'                -Label 'Cortana'
+    Remove-AppxIfPresent -PackageName 'MicrosoftTeams'                         -Label 'Microsoft Teams (personal)'
     Remove-AppxIfPresent -PackageName 'Microsoft.MicrosoftSolitaireCollection' -Label 'Solitaire Collection'
-    Remove-AppxIfPresent -PackageName 'Microsoft.PowerAutomateDesktop'      -Label 'Power Automate'
-    Remove-AppxIfPresent -PackageName 'Microsoft.Todos'                     -Label 'Microsoft To Do'
-    Remove-AppxIfPresent -PackageName 'MicrosoftCorporationII.QuickAssist'  -Label 'Quick Assist'
-    Remove-AppxIfPresent -PackageName 'Clipchamp.Clipchamp'                 -Label 'Clipchamp'
-    Remove-AppxIfPresent -PackageName 'Microsoft.MixedReality.Portal'       -Label 'Mixed Reality Portal'
-    Remove-AppxIfPresent -PackageName 'Microsoft.SkypeApp'                  -Label 'Skype'
-    Remove-AppxIfPresent -PackageName 'Microsoft.WindowsSoundRecorder'      -Label 'Sound Recorder'
+    Remove-AppxIfPresent -PackageName 'Microsoft.PowerAutomateDesktop'         -Label 'Power Automate'
+    Remove-AppxIfPresent -PackageName 'Microsoft.Todos'                        -Label 'Microsoft To Do'
+    Remove-AppxIfPresent -PackageName 'MicrosoftCorporationII.QuickAssist'     -Label 'Quick Assist'
+    Remove-AppxIfPresent -PackageName 'Clipchamp.Clipchamp'                    -Label 'Clipchamp'
+    Remove-AppxIfPresent -PackageName 'Microsoft.MixedReality.Portal'          -Label 'Mixed Reality Portal'
+    Remove-AppxIfPresent -PackageName 'Microsoft.SkypeApp'                     -Label 'Skype'
+    Remove-AppxIfPresent -PackageName 'Microsoft.WindowsSoundRecorder'         -Label 'Sound Recorder'
 
     # ── 12B — Privacy & Telemetry ─────────────────────────────────────────────
     Write-Host ""
     Write-Host "[$( Get-Timestamp )] 🔒 12B — Privacy & Telemetry …" -ForegroundColor Cyan
 
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'        -Name 'AllowTelemetry'                   -Value 0
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection' -Name 'AllowTelemetry'           -Value 0
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'        -Name 'DoNotShowFeedbackNotifications'    -Value 1
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'                -Name 'EnableActivityFeed'                -Value 0
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'                -Name 'PublishUserActivities'             -Value 0
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'                -Name 'UploadUserActivities'              -Value 0
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'Start_TrackProgs'               -Value 0
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo' -Name 'Enabled'                          -Value 0
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo'       -Name 'DisabledByGroupPolicy'            -Value 1
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338388Enabled' -Value 0
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338389Enabled' -Value 0
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-353694Enabled' -Value 0
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-353696Enabled' -Value 0
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338387Enabled' -Value 0
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SoftLandingEnabled'             -Value 0
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SystemPaneSuggestionsEnabled'   -Value 0
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SilentInstalledAppsEnabled'     -Value 0
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'OemPreInstalledAppsEnabled'     -Value 0
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent'          -Name 'ConfigureWindowsSpotlight'         -Value 2
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent'          -Name 'DisableWindowsSpotlightFeatures'   -Value 1
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors'    -Name 'DisableLocation'                   -Value 1
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy'            -Name 'LetAppsAccessLocation'             -Value 2
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\FindMyDevice'                  -Name 'AllowFindMyDevice'                 -Value 0
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Edge'                          -Name 'HideFirstRunExperience'            -Value 1
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Edge'                          -Name 'SpotlightExperiencesAndRecommendationsEnabled' -Value 0
-    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Edge'                          -Name 'NewTabPageContentEnabled'          -Value 0
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\DynamicContent\Settings' -Name 'IsDynamicSettingsEnabled'  -Value 0
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'              -Name 'AllowTelemetry'                          -Value 0
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection' -Name 'AllowTelemetry'                        -Value 0
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'              -Name 'DoNotShowFeedbackNotifications'           -Value 1
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'                      -Name 'EnableActivityFeed'                       -Value 0
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'                      -Name 'PublishUserActivities'                    -Value 0
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'                      -Name 'UploadUserActivities'                     -Value 0
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced'     -Name 'Start_TrackProgs'                         -Value 0
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo'       -Name 'Enabled'                                  -Value 0
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo'             -Name 'DisabledByGroupPolicy'                    -Value 1
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338388Enabled'         -Value 0
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338389Enabled'         -Value 0
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-353694Enabled'         -Value 0
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-353696Enabled'         -Value 0
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SubscribedContent-338387Enabled'         -Value 0
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SoftLandingEnabled'                      -Value 0
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SystemPaneSuggestionsEnabled'            -Value 0
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'SilentInstalledAppsEnabled'              -Value 0
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager' -Name 'OemPreInstalledAppsEnabled'              -Value 0
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent'                -Name 'ConfigureWindowsSpotlight'                -Value 2
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent'                -Name 'DisableWindowsSpotlightFeatures'          -Value 1
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors'          -Name 'DisableLocation'                          -Value 1
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy'                  -Name 'LetAppsAccessLocation'                    -Value 2
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\FindMyDevice'                        -Name 'AllowFindMyDevice'                        -Value 0
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Edge'                                -Name 'HideFirstRunExperience'                   -Value 1
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Edge'                                -Name 'SpotlightExperiencesAndRecommendationsEnabled' -Value 0
+    Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Edge'                                -Name 'NewTabPageContentEnabled'                 -Value 0
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\DynamicContent\Settings' -Name 'IsDynamicSettingsEnabled'               -Value 0
 
     # ── 12C — AI Features ─────────────────────────────────────────────────────
     Write-Host ""
@@ -889,8 +935,7 @@ else {
             Set-Service -Name 'WSAIFabricSvc' -StartupType Manual -ErrorAction SilentlyContinue
             Write-Host "[$( Get-Timestamp )]    ✅ WSAIFabricSvc set to Manual." -ForegroundColor DarkGreen
         }
-    }
-    catch {}
+    } catch {}
 
     # ── 12D — System Tweaks ───────────────────────────────────────────────────
     Write-Host ""
@@ -902,13 +947,12 @@ else {
     Set-ItemProperty -Path $ctxPath -Name '(Default)' -Value '' -Type String -Force
     Write-Host "[$( Get-Timestamp )]    ✅ Classic context menu enabled." -ForegroundColor DarkGreen
 
-    # FIX: StickyKeys — correct key name is 'Flags', value '506' as String
+    # StickyKeys — correct key name is 'Flags', value '506' as String
     Set-RegistryValue -Path 'HKCU:\Control Panel\Accessibility\StickyKeys' -Name 'Flags' -Value '506' -Type String
 
     # Delivery Optimization & Update tweaks
     Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization' -Name 'DODownloadMode'                 -Value 0
     Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'     -Name 'NoAutoRebootWithLoggedOnUsers'  -Value 1
-    # FIX: Both keys needed — the flag AND the period
     Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate'        -Name 'DeferFeatureUpdates'            -Value 1
     Set-RegistryValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate'        -Name 'DeferFeatureUpdatesPeriodInDays' -Value 7
 
@@ -941,13 +985,11 @@ else {
     Write-Host ""
     Write-Host "[$( Get-Timestamp )] 📁 12G — File Explorer …" -ForegroundColor Cyan
 
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'LaunchTo'            -Value 1
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'HideFileExt'        -Value 0
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'Hidden'             -Value 1
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'ShowDriveLettersFirst' -Value 4
-
-    # FIX: HubMode belongs under Explorer, not Explorer\HubMode
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer' -Name 'HubMode' -Value 1
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'LaunchTo'              -Value 1
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'HideFileExt'           -Value 0
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'Hidden'                -Value 1
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'ShowDriveLettersFirst'  -Value 4
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer'          -Name 'HubMode'               -Value 1
 
     # Hide Gallery from nav pane
     Set-RegistryValue -Path 'HKCU:\SOFTWARE\Classes\CLSID\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}' -Name 'System.IsPinnedToNameSpaceTree' -Value 0
@@ -965,12 +1007,10 @@ else {
         if ((Get-ItemProperty -Path $runKey -ErrorAction SilentlyContinue).OneDrive) {
             Remove-ItemProperty -Path $runKey -Name 'OneDrive' -Force -ErrorAction SilentlyContinue
             Write-Host "[$( Get-Timestamp )]    ✅ OneDrive startup entry removed." -ForegroundColor DarkGreen
-        }
-        else {
+        } else {
             Write-Host "[$( Get-Timestamp )]    ⏭  OneDrive startup entry not present." -ForegroundColor DarkGray
         }
-    }
-    catch {}
+    } catch {}
 
     # ── 12I — Multi-tasking ───────────────────────────────────────────────────
     Write-Host ""
@@ -998,25 +1038,22 @@ else {
             Enable-WindowsOptionalFeature -Online -FeatureName 'Containers-DisposableClientVM' -All -NoRestart -ErrorAction Stop | Out-Null
             Write-Host "[$( Get-Timestamp )]    ✅ Windows Sandbox enabled." -ForegroundColor DarkGreen
             Add-Result -App 'Windows Sandbox' -Status 'Installed'
-        }
-        catch {
+        } catch {
             Write-Host "[$( Get-Timestamp )]    ⚠️  Windows Sandbox: $($_.Exception.Message)" -ForegroundColor Yellow
             Add-Result -App 'Windows Sandbox' -Status 'Failed'
         }
-    }
-    else {
+    } else {
         Write-Host "[$( Get-Timestamp )]    ⏭  Windows Sandbox requires Pro+ (detected: $edition) — skipping." -ForegroundColor DarkGray
         Add-Result -App 'Windows Sandbox' -Status 'Skipped'
     }
 
-    # FIX: WSL2 requires BOTH features — WSL + VirtualMachinePlatform
+    # WSL2 requires BOTH features — WSL + VirtualMachinePlatform
     try {
         Enable-WindowsOptionalFeature -Online -FeatureName 'Microsoft-Windows-Subsystem-Linux' -All -NoRestart -ErrorAction Stop | Out-Null
         Enable-WindowsOptionalFeature -Online -FeatureName 'VirtualMachinePlatform'            -All -NoRestart -ErrorAction Stop | Out-Null
         Write-Host "[$( Get-Timestamp )]    ✅ WSL2 features enabled. Run 'wsl --install' after restart to install a distro." -ForegroundColor DarkGreen
         Add-Result -App 'WSL2' -Status 'Installed'
-    }
-    catch {
+    } catch {
         Write-Host "[$( Get-Timestamp )]    ⚠️  WSL2: $($_.Exception.Message)" -ForegroundColor Yellow
         Add-Result -App 'WSL2' -Status 'Failed'
     }
@@ -1025,8 +1062,8 @@ else {
     Write-Host ""
     Write-Host "[$( Get-Timestamp )] 🌙 12L — Dark Mode …" -ForegroundColor Cyan
 
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'AppsUseLightTheme'    -Value 0
-    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'SystemUsesLightTheme'  -Value 0
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'AppsUseLightTheme'   -Value 0
+    Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'SystemUsesLightTheme' -Value 0
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1040,17 +1077,15 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipEUPrivacy) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping EU privacy unlock (flag set)." -ForegroundColor DarkGray
-}
-else {
+} else {
     $origGeo = (Get-WinHomeLocation).GeoId
-    $ts = Get-Timestamp
+    $ts      = Get-Timestamp
 
     Write-Host "[$ts] 🔒 Temporarily switching region to Ireland (EU) …" -ForegroundColor DarkCyan
     try {
         Set-WinHomeLocation -GeoId 94 -ErrorAction Stop
         Write-Host "[$( Get-Timestamp )]    ✅ Region set to Ireland." -ForegroundColor DarkGreen
-    }
-    catch {
+    } catch {
         Write-Host "[$( Get-Timestamp )]    ⚠️  Could not change region: $($_.Exception.Message)" -ForegroundColor Yellow
     }
 
@@ -1071,18 +1106,15 @@ else {
             if ($remaining -eq 0) {
                 Write-Host "[$( Get-Timestamp )]    ✅ DeviceRegion values cleared ($($valueNames.Count) removed)." -ForegroundColor Green
                 Add-Result -App 'EU Privacy Unlock' -Status 'Installed'
-            }
-            else {
+            } else {
                 Write-Host "[$( Get-Timestamp )]    ⚠️  $remaining value(s) could not be deleted." -ForegroundColor Yellow
                 Add-Result -App 'EU Privacy Unlock' -Status 'Failed'
             }
-        }
-        else {
+        } else {
             Write-Host "[$( Get-Timestamp )]    ℹ  DeviceRegion key not found — already clear." -ForegroundColor Cyan
             Add-Result -App 'EU Privacy Unlock' -Status 'Skipped'
         }
-    }
-    catch {
+    } catch {
         Write-Host "[$( Get-Timestamp )]    ❌ Error: $($_.Exception.Message)" -ForegroundColor Red
         Add-Result -App 'EU Privacy Unlock' -Status 'Failed'
     }
@@ -1091,8 +1123,7 @@ else {
     try {
         Set-WinHomeLocation -GeoId $origGeo -ErrorAction Stop
         Write-Host "[$( Get-Timestamp )]    ✅ Region restored." -ForegroundColor DarkGreen
-    }
-    catch {
+    } catch {
         Write-Host "[$( Get-Timestamp )]    ⚠️  Could not restore region. Run manually: Set-WinHomeLocation -GeoId $origGeo" -ForegroundColor Yellow
     }
 }
@@ -1112,8 +1143,7 @@ foreach ($file in $script:tempFiles) {
         try {
             Remove-Item -Path $file -Force -ErrorAction Stop
             $cleaned++
-        }
-        catch {
+        } catch {
             Write-Host "[$( Get-Timestamp )]    ⚠️  Could not delete: $file" -ForegroundColor Yellow
         }
     }
@@ -1125,13 +1155,13 @@ Write-Host "[$( Get-Timestamp )] ✅ Cleaned up $cleaned temp file(s)." -Foregro
 # ─────────────────────────────────────────────────────────────────────────────
 
 $elapsed = (Get-Date) - $startTime
-$mins = [int]$elapsed.TotalMinutes
-$secs = $elapsed.Seconds
+$mins    = [int]$elapsed.TotalMinutes
+$secs    = $elapsed.Seconds
 
 $installedItems = @($script:results | Where-Object { $_.Status -eq 'Installed' })
-$skippedItems = @($script:results | Where-Object { $_.Status -eq 'Skipped' })
-$notFoundItems = @($script:results | Where-Object { $_.Status -eq 'Not Found' })
-$failedItems = @($script:results | Where-Object { $_.Status -eq 'Failed' })
+$skippedItems   = @($script:results | Where-Object { $_.Status -eq 'Skipped'   })
+$notFoundItems  = @($script:results | Where-Object { $_.Status -eq 'Not Found' })
+$failedItems    = @($script:results | Where-Object { $_.Status -eq 'Failed'    })
 
 Write-Host ""
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
