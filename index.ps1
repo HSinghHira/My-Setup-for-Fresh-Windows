@@ -77,7 +77,6 @@ if (-not $isAdmin) {
     if ($SkipDebloat)      { $psArgs += ' -SkipDebloat' }
     if ($SkipEUPrivacy)    { $psArgs += ' -SkipEUPrivacy' }
 
-    try { Stop-Transcript | Out-Null } catch {}
     Start-Process powershell.exe -ArgumentList $psArgs -Verb RunAs
     exit
 }
