@@ -236,16 +236,19 @@ function Install-AppxFromStore {
 function Install-VSExtensions {
     param(
         [string[]]$EnabledExtensions,
-        [string[]]$DisabledExtensions = @()
+        [string[]]$DisabledExtensions   = @(),
+        [string[]]$VSCodeOnlyExtensions = @()
     )
 
     $ides = @(
-        @{ Name = 'VS Code';      Cli = 'code'        },
-        @{ Name = 'Antigravity';  Cli = 'antigravity'  }
+        @{ Name = 'VS Code';     Cli = 'code';       IsAntigravity = $false },
+        @{ Name = 'Antigravity'; Cli = 'antigravity'; IsAntigravity = $true  }
     )
 
     foreach ($ide in $ides) {
-        $cli = $ide.Cli
+        $cli          = $ide.Cli
+        $isAntigravity = $ide.IsAntigravity
+
         if (-not (Get-Command $cli -ErrorAction SilentlyContinue)) {
             Write-Host "[$( Get-Timestamp )]    ⚠️  $($ide.Name) CLI ('$cli') not found in PATH — skipping." -ForegroundColor Yellow
             continue
@@ -258,6 +261,10 @@ function Install-VSExtensions {
 
         foreach ($ext in $EnabledExtensions) {
             $ts = Get-Timestamp
+
+            # Skip VS Code-only extensions silently in Antigravity
+            if ($isAntigravity -and ($VSCodeOnlyExtensions -contains $ext)) { continue }
+
             if ($installed -contains $ext) {
                 Write-Host "[$ts]    ⏭  $ext already installed in $($ide.Name)." -ForegroundColor DarkGray
                 Add-Result -App "$($ide.Name): $ext" -Status 'Skipped'
@@ -400,7 +407,7 @@ if ($SkipSystemUtils) {
     Install-WingetApp -Id 'File-New-Project.EarTrumpet'     -Label 'EarTrumpet'
     Install-WingetApp -Id 'CrystalRich.LockHunter'          -Label 'LockHunter'
     Install-WingetApp -Id 'Klocman.BulkCrapUninstaller'     -Label 'Bulk Crap Uninstaller'
-    Install-WingetApp -Id 'Microsoft.Sysinternals'          -Label 'Sysinternals Suite'
+    Install-WingetApp -Id '9P7KNL5RWT25'                    -Label 'Sysinternals Suite'  -Source 'msstore'
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -416,12 +423,12 @@ if ($SkipProductivity) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping productivity apps (flag set)." -ForegroundColor DarkGray
 } else {
     Install-WingetApp -Id 'PDFgear.PDFgear'                 -Label 'PDFgear'
-    Install-WingetApp -Id 'Neatdownloadmanager.Neatdownloadmanager' -Label 'Neat Download Manager'
+    Install-WingetApp -Id 'JavadMotallebi.NeatDownloadManager' -Label 'Neat Download Manager'
     Install-WingetApp -Id 'flux.flux'                       -Label 'f.lux'
-    Install-WingetApp -Id 'FlyPhotos.FlyPhotos'             -Label 'FlyPhotos'
-    Install-WingetApp -Id 'UnifiedRemote.UnifiedRemote'     -Label 'Unified Remote'
+    Install-AppxFromStore -ProductId '9NV4BS3L1H4S'          -Label 'FlyPhotos'
+    Install-WingetApp -Id 'UnifiedIntents.UnifiedRemote'     -Label 'Unified Remote'
     Install-WingetApp -Id 'Ditto.Ditto'                     -Label 'Ditto'
-    Install-WingetApp -Id 'Microsoft.Microsoft365' -Label 'Microsoft 365' -Source 'msstore'
+    Install-WingetApp -Id 'Microsoft.Office'                -Label 'Microsoft 365'
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -438,7 +445,7 @@ if ($SkipDevSetup) {
 } else {
     Install-WingetApp -Id 'Git.Git'                         -Label 'Git'
     Install-WingetApp -Id 'GitHub.cli'                      -Label 'GitHub CLI'
-    Install-WingetApp -Id 'oven-sh.bun'                     -Label 'Bun'
+    Install-WingetApp -Id 'Oven-sh.Bun'                     -Label 'Bun'
     Install-WingetApp -Id 'Volta.Volta'                     -Label 'Volta'
     Install-WingetApp -Id 'Notepad++.Notepad++'             -Label 'Notepad++'
     Install-WingetApp -Id 'Google.Antigravity'              -Label 'Google Antigravity'
@@ -575,7 +582,29 @@ if ($SkipExtensions) {
         'WebNative.webnative'
     )
 
-    Install-VSExtensions -EnabledExtensions $enabledExtensions -DisabledExtensions $disabledExtensions
+    # Extensions that only exist in the VS Code marketplace — silently skipped in Antigravity
+    $vscodeOnlyExtensions = @(
+        'mrmlnc.vscode-csscomb',
+        'maciejdems.add-to-gitignore',
+        'NuclleaR.vscode-extension-auto-import',
+        'oleksandr.beatify-ejs',
+        'michelemelluso.code-beautifier',
+        'BrainstormDevelopment.copy-project-tree',
+        'easy-snippet-maker.custom-snippet-maker',
+        'rslfrkndmrky.rsl-vsc-focused-folder',
+        'hwencc.html-tag-wrapper',
+        'DutchIgor.json-viewer',
+        'mrkou47.npmignore',
+        'sototecnologia.remove-comments-frontend',
+        'misbahansori.svg-fold',
+        'vdanchenkov.tailwind-class-sorter',
+        'sidharthachatterjee.vscode-tailwindcss',
+        'bourhaouta.tailwindshades',
+        'westenets.vscode-backup',
+        'MarkosTh09.color-picker'
+    )
+
+    Install-VSExtensions -EnabledExtensions $enabledExtensions -DisabledExtensions $disabledExtensions -VSCodeOnlyExtensions $vscodeOnlyExtensions
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -891,3 +920,5 @@ Write-Host "Made with ❤️ by Harman Singh Hira — https://me.hsinghhira.me" 
 Write-Host ""
 
 try { Stop-Transcript | Out-Null } catch {}
+exit 0
+# SIG # End of script — any content below this line is ignored
