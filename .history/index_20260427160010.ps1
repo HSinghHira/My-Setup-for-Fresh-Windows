@@ -606,7 +606,7 @@ if ($SkipDevSetup) {
     Install-WingetApp -Id 'Microsoft.PowerShell'       -Label 'PowerShell 7'
     Install-WingetApp -Id 'Python.Python.3.11'         -Label 'Python 3.11'
 
-    # Refresh PATH so Volta are immediately available
+    # Refresh PATH so Volta / Oh My Posh are immediately available
     $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +
                 [System.Environment]::GetEnvironmentVariable('PATH', 'User')
 
@@ -618,6 +618,25 @@ if ($SkipDevSetup) {
         Add-Result -App 'Node (via Volta)' -Status 'Installed'
     } else {
         Write-Host "[$( Get-Timestamp )]    ⚠️  Volta not in PATH — skipping Node install." -ForegroundColor Yellow
+    }
+
+    # ── Oh My Posh profile config ─────────────────────────────────────────────
+    # Uses jandedobbeleer theme; creates profile file if it doesn't exist
+    $ompLine = 'oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\jandedobbeleer.omp.json" | Invoke-Expression'
+    if (Test-Path $PROFILE) {
+        $profileContent = Get-Content $PROFILE -Raw -ErrorAction SilentlyContinue
+        if (-not ($profileContent -like '*oh-my-posh*')) {
+            Add-Content -Path $PROFILE -Value "`n# Oh My Posh`n$ompLine"
+            Write-Host "[$( Get-Timestamp )]    ✅ Oh My Posh added to PowerShell profile." -ForegroundColor Green
+        } else {
+            Write-Host "[$( Get-Timestamp )]    ⏭  Oh My Posh already in profile." -ForegroundColor DarkGray
+        }
+    } else {
+        $profileDir = Split-Path $PROFILE -Parent
+        if (-not (Test-Path $profileDir)) { New-Item -Path $profileDir -ItemType Directory -Force | Out-Null }
+        New-Item -Path $PROFILE -ItemType File -Force | Out-Null
+        Add-Content -Path $PROFILE -Value "# Oh My Posh`n$ompLine"
+        Write-Host "[$( Get-Timestamp )]    ✅ Oh My Posh profile created." -ForegroundColor Green
     }
 }
 
