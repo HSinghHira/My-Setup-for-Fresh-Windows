@@ -330,7 +330,9 @@ function Invoke-IdeCli {
     )
 
     # Prefer the .cmd shim — it is the true headless CLI and never opens a window
-    $cmdShim = (Get-Command "$Cli.cmd" -ErrorAction SilentlyContinue)?.Source
+    # FIX: Use .Source via variable instead of ?. operator (PS5 compatibility)
+    $cmdShimInfo = Get-Command "$Cli.cmd" -ErrorAction SilentlyContinue
+    $cmdShim     = if ($cmdShimInfo) { $cmdShimInfo.Source } else { $null }
     if ($cmdShim) {
         # Run via cmd.exe so the .cmd file executes correctly and output is suppressed
         $proc = Start-Process -FilePath 'cmd.exe' `
@@ -340,7 +342,8 @@ function Invoke-IdeCli {
     }
 
     # Fallback: use the bare CLI with Hidden window style
-    $exePath = (Get-Command $Cli -ErrorAction SilentlyContinue)?.Source
+    $exeInfo = Get-Command $Cli -ErrorAction SilentlyContinue
+    $exePath = if ($exeInfo) { $exeInfo.Source } else { $null }
     if (-not $exePath) { return 1 }
 
     $proc = Start-Process -FilePath $exePath `
@@ -389,13 +392,16 @@ function Install-VSExtensions {
             $tmpOut = [System.IO.Path]::GetTempFileName()
             $script:tempFiles.Add($tmpOut)
 
-            $cmdShim = (Get-Command "$cli.cmd" -ErrorAction SilentlyContinue)?.Source
+            $cmdShimInfo = Get-Command "$cli.cmd" -ErrorAction SilentlyContinue
+            $cmdShim     = if ($cmdShimInfo) { $cmdShimInfo.Source } else { $null }
             if ($cmdShim) {
                 $proc = Start-Process -FilePath 'cmd.exe' `
                             -ArgumentList "/c `"$cmdShim`" --list-extensions > `"$tmpOut`" 2>&1" `
                             -WindowStyle Hidden -PassThru -Wait
             } else {
-                $exePath = (Get-Command $cli -ErrorAction SilentlyContinue)?.Source
+                $exeInfo2 = Get-Command $cli -ErrorAction SilentlyContinue
+                $exePath  = if ($exeInfo2) { $exeInfo2.Source } else { $null }
+                if (-not $exePath) { continue }
                 $proc = Start-Process -FilePath $exePath `
                             -ArgumentList '--list-extensions' `
                             -RedirectStandardOutput $tmpOut `
