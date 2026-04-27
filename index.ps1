@@ -36,35 +36,19 @@ Start-Transcript -Path $logFile | Out-Null
 $script:tempFiles = [System.Collections.Generic.List[string]]::new()
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Section 1 — Admin Check  (auto-elevates via UAC if not already admin)
+#  Section 1 — Admin Check
 # ─────────────────────────────────────────────────────────────────────────────
 
-# FIX: Initialise $isAdmin before assignment so Set-StrictMode doesn't throw
-$isAdmin = $false
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator
 )
-
 if (-not $isAdmin) {
     Write-Host ""
-    Write-Host "⚠️  Not running as Administrator — requesting elevation via UAC …" -ForegroundColor Yellow
+    Write-Host "❌ This script must be run as Administrator." -ForegroundColor Red
+    Write-Host "   Right-click PowerShell and choose 'Run as administrator'." -ForegroundColor Yellow
     Write-Host ""
-
-    # Build argument string, forwarding any switches the user passed
-    $psArgs = "-ExecutionPolicy Bypass -File `"$scriptFile`""
-    if ($DryRun)           { $psArgs += ' -DryRun' }
-    if ($SkipRuntimes)     { $psArgs += ' -SkipRuntimes' }
-    if ($SkipCoreApps)     { $psArgs += ' -SkipCoreApps' }
-    if ($SkipSystemUtils)  { $psArgs += ' -SkipSystemUtils' }
-    if ($SkipProductivity) { $psArgs += ' -SkipProductivity' }
-    if ($SkipDevSetup)     { $psArgs += ' -SkipDevSetup' }
-    if ($SkipStoreApps)    { $psArgs += ' -SkipStoreApps' }
-    if ($SkipExtensions)   { $psArgs += ' -SkipExtensions' }
-    if ($SkipDebloat)      { $psArgs += ' -SkipDebloat' }
-    if ($SkipEUPrivacy)    { $psArgs += ' -SkipEUPrivacy' }
-
-    Start-Process powershell.exe -ArgumentList $psArgs -Verb RunAs
-    exit
+    try { Stop-Transcript | Out-Null } catch {}
+    exit 1
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
