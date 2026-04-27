@@ -50,8 +50,22 @@ if (-not $isAdmin) {
     Write-Host "⚠️  Not running as Administrator — requesting elevation via UAC …" -ForegroundColor Yellow
     Write-Host ""
 
+    # When run via iex / ScriptBlock, $PSCommandPath is empty — no file on disk.
+    # In that case re-download the script to a temp file and relaunch from there.
+    $scriptFile = $PSCommandPath
+    if (-not $scriptFile) {
+        $scriptFile = Join-Path $env:TEMP 'hira-setup-elevated.ps1'
+        try {
+            Invoke-WebRequest -Uri 'https://apps.hira.im/' -OutFile $scriptFile -UseBasicParsing -ErrorAction Stop
+        } catch {
+            Write-Host "❌ Could not save script for elevation: $($_.Exception.Message)" -ForegroundColor Red
+            try { Stop-Transcript | Out-Null } catch {}
+            exit 1
+        }
+    }
+
     # Build argument string, forwarding any switches the user passed
-    $psArgs = "-ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    $psArgs = "-ExecutionPolicy Bypass -File `"$scriptFile`""
     if ($DryRun)           { $psArgs += ' -DryRun' }
     if ($SkipRuntimes)     { $psArgs += ' -SkipRuntimes' }
     if ($SkipCoreApps)     { $psArgs += ' -SkipCoreApps' }
