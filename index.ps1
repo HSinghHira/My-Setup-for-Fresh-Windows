@@ -25,8 +25,8 @@ $ErrorActionPreference = 'Continue'
 # ─────────────────────────────────────────────────────────────────────────────
 
 $startTime = Get-Date
-$logRoot   = [Environment]::GetFolderPath('Desktop')
-$logFile   = Join-Path $logRoot ("setup-log-" + $startTime.ToString('yyyy-MM-dd_HH-mm') + ".txt")
+$logRoot = [Environment]::GetFolderPath('Desktop')
+$logFile = Join-Path $logRoot ("setup-log-" + $startTime.ToString('yyyy-MM-dd_HH-mm') + ".txt")
 Start-Transcript -Path $logFile -Append | Out-Null
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -39,17 +39,22 @@ $script:tempFiles = [System.Collections.Generic.List[string]]::new()
 #  Section 1 — Admin Check
 # ─────────────────────────────────────────────────────────────────────────────
 
-$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
-    [Security.Principal.WindowsBuiltInRole]::Administrator
-)
 if (-not $isAdmin) {
-    Write-Host ""
-    Write-Host "❌ This script must be run as Administrator." -ForegroundColor Red
-    Write-Host "   Right-click PowerShell and choose 'Run as administrator'." -ForegroundColor Yellow
-    Write-Host ""
-    try { Stop-Transcript | Out-Null } catch {}
-    exit 1
+    Write-Host "⚠️  Not running as Administrator — requesting elevation …" -ForegroundColor Yellow
+    $psArgs = "-ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    # Forward any switches the user passed
+    if ($DryRun)           { $psArgs += " -DryRun" }
+    if ($SkipRuntimes)     { $psArgs += " -SkipRuntimes" }
+    if ($SkipCoreApps)     { $psArgs += " -SkipCoreApps" }
+    if ($SkipDevSetup)     { $psArgs += " -SkipDevSetup" }
+    # ... add others as needed
+
+    Start-Process powershell.exe -ArgumentList $psArgs -Verb RunAs
+    exit
 }
+
+# After admin check...
+Clear-Host
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Section 2 — Result Tracking
@@ -116,7 +121,7 @@ function Install-WingetApp {
         [string]$Id,
         [string]$Label,
         [string]$Version = '',
-        [string]$Source  = 'winget'
+        [string]$Source = 'winget'
     )
 
     $ts = Get-Timestamp
@@ -138,11 +143,11 @@ function Install-WingetApp {
     }
 
     $installArgs = @('install', '--id', $Id, '--exact', '--silent',
-                     '--accept-package-agreements', '--accept-source-agreements',
-                     '--source', $Source)
+        '--accept-package-agreements', '--accept-source-agreements',
+        '--source', $Source)
     if ($Version) { $installArgs += @('--version', $Version) }
 
-    $attempt   = 0
+    $attempt = 0
     $succeeded = $false
 
     while ($attempt -lt 2 -and -not $succeeded) {
@@ -151,10 +156,10 @@ function Install-WingetApp {
         $ec = $LASTEXITCODE
 
         switch ($ec) {
-            0           { $succeeded = $true }
-            -1978335189 { Write-Host "[$( Get-Timestamp )]    ⏭  No upgrade available."  -ForegroundColor DarkGray; Add-Result -App $Label -Status 'Skipped';   return }
-            -1978335150 { Write-Host "[$( Get-Timestamp )]    ⏭  Already installed."     -ForegroundColor DarkGray; Add-Result -App $Label -Status 'Skipped';   return }
-            -1978335212 { Write-Host "[$( Get-Timestamp )]    🔍 Not found in source."   -ForegroundColor Yellow;   Add-Result -App $Label -Status 'Not Found'; return }
+            0 { $succeeded = $true }
+            -1978335189 { Write-Host "[$( Get-Timestamp )]    ⏭  No upgrade available."  -ForegroundColor DarkGray; Add-Result -App $Label -Status 'Skipped'; return }
+            -1978335150 { Write-Host "[$( Get-Timestamp )]    ⏭  Already installed."     -ForegroundColor DarkGray; Add-Result -App $Label -Status 'Skipped'; return }
+            -1978335212 { Write-Host "[$( Get-Timestamp )]    🔍 Not found in source."   -ForegroundColor Yellow; Add-Result -App $Label -Status 'Not Found'; return }
             default {
                 if ($attempt -lt 2) {
                     Write-Host "[$( Get-Timestamp )]    ⚠️  Attempt $attempt failed (exit $ec). Retrying in 5s …" -ForegroundColor Yellow
@@ -167,7 +172,8 @@ function Install-WingetApp {
     if ($succeeded) {
         Write-Host "[$( Get-Timestamp )]    ✅ Installed." -ForegroundColor Green
         Add-Result -App $Label -Status 'Installed'
-    } else {
+    }
+    else {
         Write-Host "[$( Get-Timestamp )]    ❌ Failed after 2 attempts." -ForegroundColor Red
         Add-Result -App $Label -Status 'Failed'
     }
@@ -186,13 +192,13 @@ function Install-AppxFromStore {
         [string]$PackageNamePattern = ''
     )
 
-    $ts       = Get-Timestamp
+    $ts = Get-Timestamp
     $storeUrl = "https://apps.microsoft.com/detail/$ProductId"
 
     # ── Already-installed check ───────────────────────────────────────────────
     $pattern = if ($PackageNamePattern) { $PackageNamePattern } else { "*$Label*" }
     $existing = Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue |
-                Where-Object { $_.Name -like $pattern }
+    Where-Object { $_.Name -like $pattern }
     if ($existing) {
         Write-Host "[$ts] ⏭  $Label already installed — skipping." -ForegroundColor DarkGray
         Add-Result -App $Label -Status 'Skipped'
@@ -212,17 +218,17 @@ function Install-AppxFromStore {
 
     # ── Source 1: tplant REST API ─────────────────────────────────────────────
     try {
-        $apiUrl  = "https://msft-store.tplant.com.au/api/Packages?id=$storeUrl&environment=Production&inputform=url"
-        $pkgs    = Invoke-RestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
+        $apiUrl = "https://msft-store.tplant.com.au/api/Packages?id=$storeUrl&environment=Production&inputform=url"
+        $pkgs = Invoke-RestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
 
         if ($pkgs -and @($pkgs).Count -gt 0) {
             $arch = Get-ArchTag
-            $pkg  = $pkgs | Where-Object { $_.packagefilename -like '*x64*' } | Select-Object -First 1
+            $pkg = $pkgs | Where-Object { $_.packagefilename -like '*x64*' } | Select-Object -First 1
             if (-not $pkg) { $pkg = $pkgs | Where-Object { $_.packagefilename -like "*$arch*" } | Select-Object -First 1 }
             if (-not $pkg) { $pkg = $pkgs | Select-Object -First 1 }
 
             $fileName = $pkg.packagefilename
-            $outPath  = Resolve-UniqueFilePath (Join-Path $env:TEMP $fileName)
+            $outPath = Resolve-UniqueFilePath (Join-Path $env:TEMP $fileName)
 
             Write-Host "[$( Get-Timestamp )]    ⬇  tplant → $fileName" -ForegroundColor DarkCyan
             Invoke-WebRequest -Uri $pkg.packagedownloadurl -OutFile $outPath -UseBasicParsing -ErrorAction Stop
@@ -234,7 +240,8 @@ function Install-AppxFromStore {
             Add-Result -App $Label -Status 'Installed'
             $success = $true
         }
-    } catch {
+    }
+    catch {
         Write-Host "[$( Get-Timestamp )]    ⚠️  tplant failed: $($_.Exception.Message)" -ForegroundColor Yellow
     }
 
@@ -242,26 +249,26 @@ function Install-AppxFromStore {
     if (-not $success) {
         try {
             Write-Host "[$( Get-Timestamp )]    🔄 Falling back to AdGuard …" -ForegroundColor Yellow
-            $body     = "type=url&url=$storeUrl&ring=Retail"
+            $body = "type=url&url=$storeUrl&ring=Retail"
             $response = Invoke-WebRequest -UseBasicParsing -Method POST `
-                            -Uri 'https://store.rg-adguard.net/api/GetFiles' `
-                            -Body $body -ContentType 'application/x-www-form-urlencoded' -ErrorAction Stop
+                -Uri 'https://store.rg-adguard.net/api/GetFiles' `
+                -Body $body -ContentType 'application/x-www-form-urlencoded' -ErrorAction Stop
 
-            $arch  = Get-ArchTag
+            $arch = Get-ArchTag
             $links = $response.Links |
-                     Where-Object { $_ -like '*.appx*' -or $_ -like '*.appxbundle*' -or
-                                    $_ -like '*.msix*'  -or $_ -like '*.msixbundle*' } |
-                     Where-Object { $_ -like '*_neutral_*' -or $_ -like "*_${arch}_*" } |
-                     Select-String -Pattern '(?<=a href=").+(?=" r)'
+            Where-Object { $_ -like '*.appx*' -or $_ -like '*.appxbundle*' -or
+                $_ -like '*.msix*' -or $_ -like '*.msixbundle*' } |
+            Where-Object { $_ -like '*_neutral_*' -or $_ -like "*_${arch}_*" } |
+            Select-String -Pattern '(?<=a href=").+(?=" r)'
 
             $urls = @($links | ForEach-Object { $_.Matches.Value })
             if ($urls.Count -eq 0) { throw "No packages found." }
 
             foreach ($url in $urls) {
                 try {
-                    $req      = Invoke-WebRequest -Uri $url -UseBasicParsing -ErrorAction Stop
+                    $req = Invoke-WebRequest -Uri $url -UseBasicParsing -ErrorAction Stop
                     $fileName = ($req.Headers['Content-Disposition'] |
-                                 Select-String -Pattern '(?<=filename=).+').Matches.Value
+                        Select-String -Pattern '(?<=filename=).+').Matches.Value
                     if (-not $fileName) { $fileName = Split-Path $url -Leaf }
 
                     $outPath = Resolve-UniqueFilePath (Join-Path $env:TEMP $fileName)
@@ -275,11 +282,13 @@ function Install-AppxFromStore {
                     Add-Result -App $Label -Status 'Installed'
                     $success = $true
                     break   # ← stop after first successful package
-                } catch {
+                }
+                catch {
                     Write-Host "[$( Get-Timestamp )]    ⚠️  Package failed, trying next …" -ForegroundColor Yellow
                 }
             }
-        } catch {
+        }
+        catch {
             Write-Host "[$( Get-Timestamp )]    ❌ AdGuard also failed: $($_.Exception.Message)" -ForegroundColor Red
         }
     }
@@ -296,24 +305,24 @@ function Install-AppxFromStore {
 function Install-VSExtensions {
     param(
         [string[]]$EnabledExtensions,
-        [string[]]$DisabledExtensions   = @(),
+        [string[]]$DisabledExtensions = @(),
         [string[]]$VSCodeOnlyExtensions = @()
     )
 
     $ides = @(
-        @{ Name = 'VS Code';     Cli = 'code';        IsAntigravity = $false },
-        @{ Name = 'Antigravity'; Cli = 'antigravity';  IsAntigravity = $true  }
+        @{ Name = 'VS Code'; Cli = 'code'; IsAntigravity = $false },
+        @{ Name = 'Antigravity'; Cli = 'antigravity'; IsAntigravity = $true }
     )
 
     # All extensions we need to process per IDE
     $allExtensions = @(
         $EnabledExtensions  | ForEach-Object { [PSCustomObject]@{ Id = $_; Disable = $false } }
-        $DisabledExtensions | ForEach-Object { [PSCustomObject]@{ Id = $_; Disable = $true  } }
+        $DisabledExtensions | ForEach-Object { [PSCustomObject]@{ Id = $_; Disable = $true } }
     )
 
     foreach ($ide in $ides) {
-        $cli          = $ide.Cli
-        $ideName      = $ide.Name
+        $cli = $ide.Cli
+        $ideName = $ide.Name
         $isAntigravity = $ide.IsAntigravity
 
         if (-not (Get-Command $cli -ErrorAction SilentlyContinue)) {
@@ -327,12 +336,12 @@ function Install-VSExtensions {
         # Get currently installed extensions (case-insensitive list)
         # Filter to strings only — Antigravity emits ErrorRecord warnings mixed into stdout
         $installedList = @(& $cli --list-extensions 2>&1 |
-                           Where-Object { $_ -is [string] } |
-                           ForEach-Object { $_.ToLower() })
+            Where-Object { $_ -is [string] } |
+            ForEach-Object { $_.ToLower() })
 
         foreach ($ext in $allExtensions) {
             $extId = $ext.Id
-            $ts    = Get-Timestamp
+            $ts = Get-Timestamp
 
             # Skip VS Code-only extensions silently in Antigravity
             if ($isAntigravity -and ($VSCodeOnlyExtensions -icontains $extId)) { continue }
@@ -348,9 +357,13 @@ function Install-VSExtensions {
             if ($installedList -icontains $extId.ToLower()) {
                 Write-Host "[$ts]    ⏭  $extId already in $ideName." -ForegroundColor DarkGray
                 Add-Result -App "$ideName : $extId" -Status 'Skipped'
-            } else {
+            }
+            else {
                 # ── Try standard install ──────────────────────────────────────
-                & $cli --install-extension $extId --force 2>&1 | Out-Null
+                $proc = Start-Process -FilePath $cli `
+                    -ArgumentList "--install-extension", $extId, "--force", "--log", "off" `
+                    -WindowStyle Hidden -PassThru -Wait
+                $ec = $proc.ExitCode
                 $ec = $LASTEXITCODE
 
                 # ── VSIX fallback for Antigravity ─────────────────────────────
@@ -362,7 +375,8 @@ function Install-VSExtensions {
                 if ($ec -eq 0) {
                     Write-Host "[$ts]    ✅ $extId → $ideName" -ForegroundColor Green
                     Add-Result -App "$ideName : $extId" -Status 'Installed'
-                } else {
+                }
+                else {
                     Write-Host "[$ts]    ❌ $extId failed in $ideName (exit $ec)" -ForegroundColor Red
                     Add-Result -App "$ideName : $extId" -Status 'Failed'
                     continue   # don't try to disable an extension that failed to install
@@ -371,7 +385,9 @@ function Install-VSExtensions {
 
             # ── Disable if flagged (runs for both just-installed and pre-existing) ──
             if ($ext.Disable) {
-                & $cli --disable-extension $extId 2>&1 | Out-Null
+                Start-Process -FilePath $cli `
+                    -ArgumentList "--disable-extension", $extId, "--log", "off" `
+                    -WindowStyle Hidden -Wait
                 Write-Host "[$ts]    🔕 $extId disabled in $ideName" -ForegroundColor DarkGray
             }
         }
@@ -390,29 +406,29 @@ function Install-ExtensionViaVsix {
     )
 
     try {
-        $parts     = $ExtId -split '\.'
+        $parts = $ExtId -split '\.'
         $publisher = $parts[0]
-        $extName   = $parts[1..($parts.Count - 1)] -join '.'
+        $extName = $parts[1..($parts.Count - 1)] -join '.'
 
         # Query the VS Marketplace REST API for the latest version
-        $apiUrl  = 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery'
-        $body    = @{
+        $apiUrl = 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery'
+        $body = @{
             filters = @(@{
-                criteria = @(@{ filterType = 7; value = $ExtId })
-            })
-            flags = 914
+                    criteria = @(@{ filterType = 7; value = $ExtId })
+                })
+            flags   = 914
         } | ConvertTo-Json -Depth 10
 
         $response = Invoke-RestMethod -Uri $apiUrl -Method POST -Body $body `
-                        -ContentType 'application/json' `
-                        -Headers @{ 'Accept' = 'application/json;api-version=7.1-preview.1' } `
-                        -ErrorAction Stop
+            -ContentType 'application/json' `
+            -Headers @{ 'Accept' = 'application/json;api-version=7.1-preview.1' } `
+            -ErrorAction Stop
 
         $version = $response.results[0].extensions[0].versions[0].version
         if (-not $version) { throw "Could not resolve version for $ExtId" }
 
         # Build the direct download URL
-        $vsixUrl  = "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/$publisher/vsextensions/$extName/$version/vspackage"
+        $vsixUrl = "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/$publisher/vsextensions/$extName/$version/vspackage"
         $vsixPath = Join-Path $env:TEMP "$publisher.$extName-$version.vsix"
         $vsixPath = Resolve-UniqueFilePath $vsixPath
 
@@ -423,7 +439,8 @@ function Install-ExtensionViaVsix {
         & $Cli --install-extension $vsixPath --force 2>&1 | Out-Null
         return $LASTEXITCODE
 
-    } catch {
+    }
+    catch {
         Write-Host "[$( Get-Timestamp )]       VSIX fallback failed: $($_.Exception.Message)" -ForegroundColor Red
         return 1
     }
@@ -449,7 +466,8 @@ function Set-RegistryValue {
         }
         Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -Force
         Write-Host "[$( Get-Timestamp )]    ✅ $Name = $Value" -ForegroundColor DarkGreen
-    } catch {
+    }
+    catch {
         Write-Host "[$( Get-Timestamp )]    ⚠️  Could not set [$Name]: $($_.Exception.Message)" -ForegroundColor Yellow
     }
 }
@@ -469,20 +487,22 @@ function Remove-AppxIfPresent {
     }
 
     try {
-        $pkg  = Get-AppxPackage -Name $PackageName -ErrorAction SilentlyContinue
+        $pkg = Get-AppxPackage -Name $PackageName -ErrorAction SilentlyContinue
         $prov = Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue |
-                Where-Object { $_.DisplayName -like $PackageName }
+        Where-Object { $_.DisplayName -like $PackageName }
 
-        if ($pkg)  { $pkg  | Remove-AppxPackage -ErrorAction SilentlyContinue }
+        if ($pkg) { $pkg  | Remove-AppxPackage -ErrorAction SilentlyContinue }
         if ($prov) { $prov | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Out-Null }
 
         if ($pkg -or $prov) {
             Write-Host "[$ts]    ✅ Removed $Label" -ForegroundColor Green
             Add-Result -App "Removed: $Label" -Status 'Installed'
-        } else {
+        }
+        else {
             Write-Host "[$ts]    ⏭  $Label not found — skipping." -ForegroundColor DarkGray
         }
-    } catch {
+    }
+    catch {
         Write-Host "[$ts]    ❌ Failed to remove ${Label}: $($_.Exception.Message)" -ForegroundColor Red
         Add-Result -App "Removed: $Label" -Status 'Failed'
     }
@@ -518,7 +538,8 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipRuntimes) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping runtimes (flag set)." -ForegroundColor DarkGray
-} else {
+}
+else {
     Install-WingetApp -Id 'Microsoft.VCRedist.2015+.x64'      -Label 'VC++ Redistributable 2015+ (x64)'
     Install-WingetApp -Id 'Microsoft.DotNet.DesktopRuntime.5'  -Label '.NET Desktop Runtime 5'
     Install-WingetApp -Id 'Microsoft.DotNet.DesktopRuntime.6'  -Label '.NET Desktop Runtime 6'
@@ -537,7 +558,8 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipCoreApps) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping core apps (flag set)." -ForegroundColor DarkGray
-} else {
+}
+else {
     Install-WingetApp -Id '7zip.7zip'      -Label '7-Zip'
     Install-WingetApp -Id 'Daum.PotPlayer' -Label 'PotPlayer'
     Install-WingetApp -Id 'ShareX.ShareX'  -Label 'ShareX'
@@ -555,7 +577,8 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipSystemUtils) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping system utilities (flag set)." -ForegroundColor DarkGray
-} else {
+}
+else {
     Install-WingetApp -Id 'xanderfrangos.twinkletray'   -Label 'TwinkleTray'
     Install-WingetApp -Id 'File-New-Project.EarTrumpet' -Label 'EarTrumpet'
     Install-WingetApp -Id 'CrystalRich.LockHunter'      -Label 'LockHunter'
@@ -574,7 +597,8 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipProductivity) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping productivity apps (flag set)." -ForegroundColor DarkGray
-} else {
+}
+else {
     Install-WingetApp -Id 'PDFgear.PDFgear'                    -Label 'PDFgear'
     Install-WingetApp -Id 'JavadMotallebi.NeatDownloadManager' -Label 'Neat Download Manager'
     Install-WingetApp -Id 'flux.flux'                          -Label 'f.lux'
@@ -594,7 +618,8 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipDevSetup) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping dev setup (flag set)." -ForegroundColor DarkGray
-} else {
+}
+else {
     Install-WingetApp -Id 'Git.Git'                    -Label 'Git'
     Install-WingetApp -Id 'GitHub.cli'                 -Label 'GitHub CLI'
     Install-WingetApp -Id 'Oven-sh.Bun'                -Label 'Bun'
@@ -608,7 +633,7 @@ if ($SkipDevSetup) {
 
     # Refresh PATH so Volta are immediately available
     $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +
-                [System.Environment]::GetEnvironmentVariable('PATH', 'User')
+    [System.Environment]::GetEnvironmentVariable('PATH', 'User')
 
     # ── Node via Volta ────────────────────────────────────────────────────────
     if (Get-Command volta -ErrorAction SilentlyContinue) {
@@ -616,7 +641,8 @@ if ($SkipDevSetup) {
         volta install node 2>&1 | Out-Null
         Write-Host "[$( Get-Timestamp )]    ✅ Node installed via Volta." -ForegroundColor Green
         Add-Result -App 'Node (via Volta)' -Status 'Installed'
-    } else {
+    }
+    else {
         Write-Host "[$( Get-Timestamp )]    ⚠️  Volta not in PATH — skipping Node install." -ForegroundColor Yellow
     }
 }
@@ -632,7 +658,8 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipStoreApps) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping Store apps (flag set)." -ForegroundColor DarkGray
-} else {
+}
+else {
     Install-WingetApp -Id '9PKTQ5699M62' -Label 'iCloud' -Source 'msstore'
     Install-WingetApp -Id '9n7jsxc1sjk6' -Label 'Blip'   -Source 'msstore'
 
@@ -652,11 +679,12 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 # Refresh PATH so freshly installed IDEs are visible
 $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +
-            [System.Environment]::GetEnvironmentVariable('PATH', 'User')
+[System.Environment]::GetEnvironmentVariable('PATH', 'User')
 
 if ($SkipExtensions) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping extensions (flag set)." -ForegroundColor DarkGray
-} else {
+}
+else {
 
     # ── Extensions installed and left ENABLED ─────────────────────────────────
     $enabledExtensions = @(
@@ -761,7 +789,8 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipDebloat) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping debloat (flag set)." -ForegroundColor DarkGray
-} else {
+}
+else {
 
     # Create restore point before debloat
     Write-Host "[$( Get-Timestamp )] 🛡  Creating system restore point …" -ForegroundColor DarkCyan
@@ -769,7 +798,8 @@ if ($SkipDebloat) {
         Enable-ComputerRestore -Drive "$env:SystemDrive" -ErrorAction SilentlyContinue
         Checkpoint-Computer -Description 'Before Windows 11 Setup Script Debloat' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop
         Write-Host "[$( Get-Timestamp )]    ✅ Restore point created." -ForegroundColor Green
-    } catch {
+    }
+    catch {
         Write-Host "[$( Get-Timestamp )]    ⚠️  Could not create restore point: $($_.Exception.Message)" -ForegroundColor Yellow
     }
 
@@ -859,7 +889,8 @@ if ($SkipDebloat) {
             Set-Service -Name 'WSAIFabricSvc' -StartupType Manual -ErrorAction SilentlyContinue
             Write-Host "[$( Get-Timestamp )]    ✅ WSAIFabricSvc set to Manual." -ForegroundColor DarkGreen
         }
-    } catch {}
+    }
+    catch {}
 
     # ── 12D — System Tweaks ───────────────────────────────────────────────────
     Write-Host ""
@@ -934,10 +965,12 @@ if ($SkipDebloat) {
         if ((Get-ItemProperty -Path $runKey -ErrorAction SilentlyContinue).OneDrive) {
             Remove-ItemProperty -Path $runKey -Name 'OneDrive' -Force -ErrorAction SilentlyContinue
             Write-Host "[$( Get-Timestamp )]    ✅ OneDrive startup entry removed." -ForegroundColor DarkGreen
-        } else {
+        }
+        else {
             Write-Host "[$( Get-Timestamp )]    ⏭  OneDrive startup entry not present." -ForegroundColor DarkGray
         }
-    } catch {}
+    }
+    catch {}
 
     # ── 12I — Multi-tasking ───────────────────────────────────────────────────
     Write-Host ""
@@ -965,11 +998,13 @@ if ($SkipDebloat) {
             Enable-WindowsOptionalFeature -Online -FeatureName 'Containers-DisposableClientVM' -All -NoRestart -ErrorAction Stop | Out-Null
             Write-Host "[$( Get-Timestamp )]    ✅ Windows Sandbox enabled." -ForegroundColor DarkGreen
             Add-Result -App 'Windows Sandbox' -Status 'Installed'
-        } catch {
+        }
+        catch {
             Write-Host "[$( Get-Timestamp )]    ⚠️  Windows Sandbox: $($_.Exception.Message)" -ForegroundColor Yellow
             Add-Result -App 'Windows Sandbox' -Status 'Failed'
         }
-    } else {
+    }
+    else {
         Write-Host "[$( Get-Timestamp )]    ⏭  Windows Sandbox requires Pro+ (detected: $edition) — skipping." -ForegroundColor DarkGray
         Add-Result -App 'Windows Sandbox' -Status 'Skipped'
     }
@@ -980,7 +1015,8 @@ if ($SkipDebloat) {
         Enable-WindowsOptionalFeature -Online -FeatureName 'VirtualMachinePlatform'            -All -NoRestart -ErrorAction Stop | Out-Null
         Write-Host "[$( Get-Timestamp )]    ✅ WSL2 features enabled. Run 'wsl --install' after restart to install a distro." -ForegroundColor DarkGreen
         Add-Result -App 'WSL2' -Status 'Installed'
-    } catch {
+    }
+    catch {
         Write-Host "[$( Get-Timestamp )]    ⚠️  WSL2: $($_.Exception.Message)" -ForegroundColor Yellow
         Add-Result -App 'WSL2' -Status 'Failed'
     }
@@ -1004,15 +1040,17 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 
 if ($SkipEUPrivacy) {
     Write-Host "[$( Get-Timestamp )] ⏭  Skipping EU privacy unlock (flag set)." -ForegroundColor DarkGray
-} else {
+}
+else {
     $origGeo = (Get-WinHomeLocation).GeoId
-    $ts      = Get-Timestamp
+    $ts = Get-Timestamp
 
     Write-Host "[$ts] 🔒 Temporarily switching region to Ireland (EU) …" -ForegroundColor DarkCyan
     try {
         Set-WinHomeLocation -GeoId 94 -ErrorAction Stop
         Write-Host "[$( Get-Timestamp )]    ✅ Region set to Ireland." -ForegroundColor DarkGreen
-    } catch {
+    }
+    catch {
         Write-Host "[$( Get-Timestamp )]    ⚠️  Could not change region: $($_.Exception.Message)" -ForegroundColor Yellow
     }
 
@@ -1033,15 +1071,18 @@ if ($SkipEUPrivacy) {
             if ($remaining -eq 0) {
                 Write-Host "[$( Get-Timestamp )]    ✅ DeviceRegion values cleared ($($valueNames.Count) removed)." -ForegroundColor Green
                 Add-Result -App 'EU Privacy Unlock' -Status 'Installed'
-            } else {
+            }
+            else {
                 Write-Host "[$( Get-Timestamp )]    ⚠️  $remaining value(s) could not be deleted." -ForegroundColor Yellow
                 Add-Result -App 'EU Privacy Unlock' -Status 'Failed'
             }
-        } else {
+        }
+        else {
             Write-Host "[$( Get-Timestamp )]    ℹ  DeviceRegion key not found — already clear." -ForegroundColor Cyan
             Add-Result -App 'EU Privacy Unlock' -Status 'Skipped'
         }
-    } catch {
+    }
+    catch {
         Write-Host "[$( Get-Timestamp )]    ❌ Error: $($_.Exception.Message)" -ForegroundColor Red
         Add-Result -App 'EU Privacy Unlock' -Status 'Failed'
     }
@@ -1050,7 +1091,8 @@ if ($SkipEUPrivacy) {
     try {
         Set-WinHomeLocation -GeoId $origGeo -ErrorAction Stop
         Write-Host "[$( Get-Timestamp )]    ✅ Region restored." -ForegroundColor DarkGreen
-    } catch {
+    }
+    catch {
         Write-Host "[$( Get-Timestamp )]    ⚠️  Could not restore region. Run manually: Set-WinHomeLocation -GeoId $origGeo" -ForegroundColor Yellow
     }
 }
@@ -1070,7 +1112,8 @@ foreach ($file in $script:tempFiles) {
         try {
             Remove-Item -Path $file -Force -ErrorAction Stop
             $cleaned++
-        } catch {
+        }
+        catch {
             Write-Host "[$( Get-Timestamp )]    ⚠️  Could not delete: $file" -ForegroundColor Yellow
         }
     }
@@ -1082,13 +1125,13 @@ Write-Host "[$( Get-Timestamp )] ✅ Cleaned up $cleaned temp file(s)." -Foregro
 # ─────────────────────────────────────────────────────────────────────────────
 
 $elapsed = (Get-Date) - $startTime
-$mins    = [int]$elapsed.TotalMinutes
-$secs    = $elapsed.Seconds
+$mins = [int]$elapsed.TotalMinutes
+$secs = $elapsed.Seconds
 
 $installedItems = @($script:results | Where-Object { $_.Status -eq 'Installed' })
-$skippedItems   = @($script:results | Where-Object { $_.Status -eq 'Skipped'   })
-$notFoundItems  = @($script:results | Where-Object { $_.Status -eq 'Not Found' })
-$failedItems    = @($script:results | Where-Object { $_.Status -eq 'Failed'    })
+$skippedItems = @($script:results | Where-Object { $_.Status -eq 'Skipped' })
+$notFoundItems = @($script:results | Where-Object { $_.Status -eq 'Not Found' })
+$failedItems = @($script:results | Where-Object { $_.Status -eq 'Failed' })
 
 Write-Host ""
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
@@ -1125,4 +1168,5 @@ Write-Host "Made with ❤️ by Harman Singh Hira — https://me.hsinghhira.me" 
 Write-Host ""
 
 try { Stop-Transcript | Out-Null } catch {}
-return
+exit 0
+# SIG # End of script — any content below this line is ignored

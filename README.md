@@ -8,6 +8,12 @@ Windows setup scripts.
 
 ```powershell
 irm https://apps.hira.im/ | iex
+
+# Dry Run Mode
+& ([scriptblock]::Create((irm https://apps.hira.im/))) -DryRun
+
+# More Flags
+& ([scriptblock]::Create((irm https://apps.hira.im/))) -DryRun -SkipStoreApps -SkipDebloat
 ```
 
 **Appx installer** — downloads and installs a Microsoft Store app by URL or Product ID:
@@ -27,5 +33,4 @@ irm https://apps.hira.im/AppInstaller | iex
 
 - `index.ps1` — main setup script. Installs runtimes, core apps, system utilities, dev tools, and Store apps via winget. Prompts for upgrades at the end.
 - `Get-Appx.ps1` — standalone Store app installer. Tries `store.rg-adguard.net` first, falls back to `msft-store.tplant.com.au`.
-
 
