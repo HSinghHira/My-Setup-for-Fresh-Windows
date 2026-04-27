@@ -1,0 +1,751 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260427181518
+Username: HIRA\jatth
+RunAs User: HIRA\jatth
+Configuration Name: 
+Machine: HIRA (Microsoft Windows NT 10.0.22631.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe
+Process ID: 18312
+PSVersion: 5.1.22621.6133
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.22621.6133
+BuildVersion: 10.0.22621.6133
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+
+================================================================
+         Windows 11 Setup Script - Master Edition
+                  by Harman Singh Hira
+================================================================
+
+================================================================
+   DRY-RUN MODE - Nothing will be installed or changed
+   All steps will be printed but not executed
+================================================================
+
+
+------------------------------------------------------------
+  Updating winget ...
+------------------------------------------------------------
+Get-Timestamp : The term 'Get-Timestamp' is not recognized as the name of a cmdlet, function, script file, or operable 
+program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:95 char:17
++ Write-Host "[$( Get-Timestamp )] OK winget updated." -ForegroundColor ...
++                 ~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Get-Timestamp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Get-Timestamp : The term 'Get-Timestamp' is not recognized as the name of a cmdlet, function, script file, or operable
+program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:95 char:17
++ Write-Host "[$( Get-Timestamp )] OK winget updated." -ForegroundColor ...
++                 ~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Get-Timestamp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+[] OK winget updated.
+
+------------------------------------------------------------
+  Runtimes & Redistributables
+------------------------------------------------------------
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:109 char:5
++     Install-WingetApp -Id 'Microsoft.VCRedist.2015+.x64'      -Label  ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:109 char:5
++     Install-WingetApp -Id 'Microsoft.VCRedist.2015+.x64'      -Label  ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:110 char:5
++     Install-WingetApp -Id 'Microsoft.DotNet.DesktopRuntime.5'  -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:110 char:5
++     Install-WingetApp -Id 'Microsoft.DotNet.DesktopRuntime.5'  -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:111 char:5
++     Install-WingetApp -Id 'Microsoft.DotNet.DesktopRuntime.6'  -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:111 char:5
++     Install-WingetApp -Id 'Microsoft.DotNet.DesktopRuntime.6'  -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:112 char:5
++     Install-WingetApp -Id 'Microsoft.DotNet.DesktopRuntime.8'  -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:112 char:5
++     Install-WingetApp -Id 'Microsoft.DotNet.DesktopRuntime.8'  -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:113 char:5
++     Install-WingetApp -Id 'Microsoft.DotNet.DesktopRuntime.10' -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:113 char:5
++     Install-WingetApp -Id 'Microsoft.DotNet.DesktopRuntime.10' -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+
+------------------------------------------------------------
+  Core Apps
+------------------------------------------------------------
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:128 char:5
++     Install-WingetApp -Id '7zip.7zip'      -Label '7-Zip'
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:128 char:5
++     Install-WingetApp -Id '7zip.7zip'      -Label '7-Zip'
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:129 char:5
++     Install-WingetApp -Id 'Daum.PotPlayer' -Label 'PotPlayer'
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:129 char:5
++     Install-WingetApp -Id 'Daum.PotPlayer' -Label 'PotPlayer'
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:130 char:5
++     Install-WingetApp -Id 'ShareX.ShareX'  -Label 'ShareX'
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:130 char:5
++     Install-WingetApp -Id 'ShareX.ShareX'  -Label 'ShareX'
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:131 char:5
++     Install-WingetApp -Id 'Gyan.FFmpeg'    -Label 'FFmpeg'
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:131 char:5
++     Install-WingetApp -Id 'Gyan.FFmpeg'    -Label 'FFmpeg'
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+
+------------------------------------------------------------
+  System Utilities
+------------------------------------------------------------
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:146 char:5
++     Install-WingetApp -Id 'xanderfrangos.twinkletray'   -Label 'Twink ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:146 char:5
++     Install-WingetApp -Id 'xanderfrangos.twinkletray'   -Label 'Twink ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:147 char:5
++     Install-WingetApp -Id 'File-New-Project.EarTrumpet' -Label 'EarTr ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:147 char:5
++     Install-WingetApp -Id 'File-New-Project.EarTrumpet' -Label 'EarTr ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:148 char:5
++     Install-WingetApp -Id 'CrystalRich.LockHunter'      -Label 'LockH ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:148 char:5
++     Install-WingetApp -Id 'CrystalRich.LockHunter'      -Label 'LockH ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:149 char:5
++     Install-WingetApp -Id 'Klocman.BulkCrapUninstaller' -Label 'Bulk  ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:149 char:5
++     Install-WingetApp -Id 'Klocman.BulkCrapUninstaller' -Label 'Bulk  ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:150 char:5
++     Install-WingetApp -Id '9P7KNL5RWT25'                -Label 'Sysin ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:150 char:5
++     Install-WingetApp -Id '9P7KNL5RWT25'                -Label 'Sysin ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+
+------------------------------------------------------------
+  Productivity Apps
+------------------------------------------------------------
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:165 char:5
++     Install-WingetApp -Id 'PDFgear.PDFgear'                    -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:165 char:5
++     Install-WingetApp -Id 'PDFgear.PDFgear'                    -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:166 char:5
++     Install-WingetApp -Id 'JavadMotallebi.NeatDownloadManager' -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:166 char:5
++     Install-WingetApp -Id 'JavadMotallebi.NeatDownloadManager' -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:167 char:5
++     Install-WingetApp -Id 'flux.flux'                          -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:167 char:5
++     Install-WingetApp -Id 'flux.flux'                          -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:168 char:5
++     Install-WingetApp -Id 'riyasy.FlyPhotos'                   -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:168 char:5
++     Install-WingetApp -Id 'riyasy.FlyPhotos'                   -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:169 char:5
++     Install-WingetApp -Id 'UnifiedIntents.UnifiedRemote'       -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:169 char:5
++     Install-WingetApp -Id 'UnifiedIntents.UnifiedRemote'       -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:170 char:5
++     Install-WingetApp -Id 'Ditto.Ditto'                        -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:170 char:5
++     Install-WingetApp -Id 'Ditto.Ditto'                        -Label ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+
+------------------------------------------------------------
+  Dev Setup
+------------------------------------------------------------
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:185 char:5
++     Install-WingetApp -Id 'Git.Git'                    -Label 'Git'
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:185 char:5
++     Install-WingetApp -Id 'Git.Git'                    -Label 'Git'
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:186 char:5
++     Install-WingetApp -Id 'GitHub.cli'                 -Label 'GitHub ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:186 char:5
++     Install-WingetApp -Id 'GitHub.cli'                 -Label 'GitHub ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:187 char:5
++     Install-WingetApp -Id 'Oven-sh.Bun'                -Label 'Bun'
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:187 char:5
++     Install-WingetApp -Id 'Oven-sh.Bun'                -Label 'Bun'
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:188 char:5
++     Install-WingetApp -Id 'Volta.Volta'                -Label 'Volta'
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:188 char:5
++     Install-WingetApp -Id 'Volta.Volta'                -Label 'Volta'
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:189 char:5
++     Install-WingetApp -Id 'Notepad++.Notepad++'        -Label 'Notepa ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:189 char:5
++     Install-WingetApp -Id 'Notepad++.Notepad++'        -Label 'Notepa ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:190 char:5
++     Install-WingetApp -Id 'Google.Antigravity'         -Label 'Google ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:190 char:5
++     Install-WingetApp -Id 'Google.Antigravity'         -Label 'Google ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:191 char:5
++     Install-WingetApp -Id 'Microsoft.VisualStudioCode' -Label 'VS Cod ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:191 char:5
++     Install-WingetApp -Id 'Microsoft.VisualStudioCode' -Label 'VS Cod ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:192 char:5
++     Install-WingetApp -Id 'Microsoft.WindowsTerminal'  -Label 'Window ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:192 char:5
++     Install-WingetApp -Id 'Microsoft.WindowsTerminal'  -Label 'Window ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:193 char:5
++     Install-WingetApp -Id 'Microsoft.PowerShell'       -Label 'PowerS ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:193 char:5
++     Install-WingetApp -Id 'Microsoft.PowerShell'       -Label 'PowerS ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:194 char:5
++     Install-WingetApp -Id 'Python.Python.3.11'         -Label 'Python ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:194 char:5
++     Install-WingetApp -Id 'Python.Python.3.11'         -Label 'Python ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Get-Timestamp : The term 'Get-Timestamp' is not recognized as the name of a cmdlet, function, script file, or operable 
+program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:200 char:25
++         Write-Host "[$( Get-Timestamp )] # Installing Node via Volta  ...
++                         ~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Get-Timestamp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Get-Timestamp : The term 'Get-Timestamp' is not recognized as the name of a cmdlet, function, script file, or operable
+program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:200 char:25
++         Write-Host "[$( Get-Timestamp )] # Installing Node via Volta  ...
++                         ~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Get-Timestamp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+[] # Installing Node via Volta ...
+Add-Result : The term 'Add-Result' is not recognized as the name of a cmdlet, function, script file, or operable 
+program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:202 char:9
++         Add-Result -App 'Node (via Volta)' -Status 'Installed'
++         ~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Add-Result:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Add-Result : The term 'Add-Result' is not recognized as the name of a cmdlet, function, script file, or operable
+program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:202 char:9
++         Add-Result -App 'Node (via Volta)' -Status 'Installed'
++         ~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Add-Result:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+
+------------------------------------------------------------
+  Microsoft Store Apps
+------------------------------------------------------------
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:218 char:5
++     Install-WingetApp -Id '9PKTQ5699M62' -Label 'iCloud' -Source 'mss ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:218 char:5
++     Install-WingetApp -Id '9PKTQ5699M62' -Label 'iCloud' -Source 'mss ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:219 char:5
++     Install-WingetApp -Id '9n7jsxc1sjk6' -Label 'Blip'   -Source 'mss ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-WingetApp : The term 'Install-WingetApp' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:219 char:5
++     Install-WingetApp -Id '9n7jsxc1sjk6' -Label 'Blip'   -Source 'mss ...
++     ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-WingetApp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Install-AppxFromStore : The term 'Install-AppxFromStore' is not recognized as the name of a cmdlet, function, script 
+file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct 
+and try again.
+At line:220 char:5
++     Install-AppxFromStore -ProductId '9p64kgf20h0t' -Label 'Edison Ma ...
++     ~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-AppxFromStore:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Install-AppxFromStore : The term 'Install-AppxFromStore' is not recognized as the name of a cmdlet, function, script
+file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct
+and try again.
+At line:220 char:5
++     Install-AppxFromStore -ProductId '9p64kgf20h0t' -Label 'Edison Ma ...
++     ~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Install-AppxFromStore:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+
+------------------------------------------------------------
+  VS Code & Antigravity Extensions
+------------------------------------------------------------
+The variable '$enabledExtensions' cannot be retrieved because it has not been set.
+At line:239 char:31
++         -EnabledExtensions    $enabledExtensions  `
++                               ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (enabledExtensions:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+The variable '$enabledExtensions' cannot be retrieved because it has not been set.
+At line:239 char:31
++         -EnabledExtensions    $enabledExtensions  `
++                               ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (enabledExtensions:String) [], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined
+
+. : The term '\scripts\sections\Debloat.ps1' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:246 char:3
++ . "$PSScriptRoot\scripts\sections\Debloat.ps1"
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (\scripts\sections\Debloat.ps1:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+. : The term '\scripts\sections\Debloat.ps1' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:246 char:3
++ . "$PSScriptRoot\scripts\sections\Debloat.ps1"
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (\scripts\sections\Debloat.ps1:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+. : The term '\scripts\sections\Privacy.ps1' is not recognized as the name of a cmdlet, function, script file, or 
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try 
+again.
+At line:247 char:3
++ . "$PSScriptRoot\scripts\sections\Privacy.ps1"
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (\scripts\sections\Privacy.ps1:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+. : The term '\scripts\sections\Privacy.ps1' is not recognized as the name of a cmdlet, function, script file, or
+operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:247 char:3
++ . "$PSScriptRoot\scripts\sections\Privacy.ps1"
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (\scripts\sections\Privacy.ps1:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+
+------------------------------------------------------------
+  Cleaning up temp files ...
+------------------------------------------------------------
+Get-Timestamp : The term 'Get-Timestamp' is not recognized as the name of a cmdlet, function, script file, or operable 
+program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:264 char:17
++ Write-Host "[$( Get-Timestamp )] OK Cleaned up $cleaned temp file(s). ...
++                 ~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Get-Timestamp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+Get-Timestamp : The term 'Get-Timestamp' is not recognized as the name of a cmdlet, function, script file, or operable
+program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:264 char:17
++ Write-Host "[$( Get-Timestamp )] OK Cleaned up $cleaned temp file(s). ...
++                 ~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Get-Timestamp:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+[] OK Cleaned up 0 temp file(s).
+
+------------------------------------------------------------
+  SETUP COMPLETE - Summary
+------------------------------------------------------------
+
+(!) Total time: 0 minutes 3 seconds
+(!) Log saved to Desktop: C:\Users\jatth\Desktop\setup-log-2026-04-27_18-15.txt
+(!) A restart may be required for all changes to take effect.
+
+Made with <3 by Harman Singh Hira - https://me.hsinghhira.me
+
+**********************
+Windows PowerShell transcript end
+End time: 20260427181521
+**********************

@@ -20,11 +20,41 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Continue'
 
+# --- Bootstrapping Logic -------------------------------------------------------
+
+$script:isRemote = [string]::IsNullOrEmpty($PSScriptRoot)
+$script:repoName = "HSinghHira/My-Setup-after-Fresh-Windows-Installation"
+$script:baseUrl  = "https://raw.githubusercontent.com/$($script:repoName)/main"
+
+# This block will be used to import files either locally or remotely
+$script:Bootstrapper = {
+    param([string]$RelativePath)
+    if ($script:isRemote) {
+        $url = "$($script:baseUrl)/$($RelativePath)".Replace('\', '/')
+        Write-Host "  > Bootstrapping: $RelativePath ..." -ForegroundColor Gray
+        try {
+            $content = Invoke-RestMethod -Uri $url -Method Get -ErrorAction Stop
+            . ([scriptblock]::Create($content))
+        } catch {
+            Write-Host "X Failed to download $RelativePath from $url" -ForegroundColor Red
+            throw $_
+        }
+    } else {
+        $path = Join-Path $PSScriptRoot $RelativePath
+        if (Test-Path $path) {
+            . $path
+        } else {
+            Write-Host "X Local file not found: $path" -ForegroundColor Red
+            throw "File not found: $path"
+        }
+    }
+}
+
 # --- Load Libraries -----------------------------------------------------------
 
-. "$PSScriptRoot\scripts\Helpers.ps1"
-. "$PSScriptRoot\scripts\Installers.ps1"
-. "$PSScriptRoot\scripts\Extensions.ps1"
+. $script:Bootstrapper "scripts\Helpers.ps1"
+. $script:Bootstrapper "scripts\Installers.ps1"
+. $script:Bootstrapper "scripts\Extensions.ps1"
 
 # ------------------------------------------------------------------------------
 #  Transcript / Log File -> saved to Desktop
@@ -242,8 +272,8 @@ if ($SkipExtensions) {
 
 # --- Sections 12 & 13 (Modular) -----------------------------------------------
 
-. "$PSScriptRoot\scripts\sections\Debloat.ps1"
-. "$PSScriptRoot\scripts\sections\Privacy.ps1"
+. $script:Bootstrapper "scripts\sections\Debloat.ps1"
+. $script:Bootstrapper "scripts\sections\Privacy.ps1"
 
 # ------------------------------------------------------------------------------
 #  Temp File Cleanup

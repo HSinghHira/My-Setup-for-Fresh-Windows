@@ -1,5 +1,5 @@
 
-    $enabledExtensions = @(
+    $script:enabledExtensions = @(
         'xyz.local-history',                       # Local file history
         'mrmlnc.vscode-csscomb',                   # CSS property sorter
         'PKief.material-icon-theme',               # Material file icons
@@ -51,7 +51,7 @@
     )
 
     # ── Extensions installed but started DISABLED ─────────────────────────────
-    $disabledExtensions = @(
+    $script:disabledExtensions = @(
         'tamasfe.even-better-toml',   # TOML language support
         'DavidKol.fastcompare',       # Fast file comparison
         'Nobuwu.mc-color',            # Minecraft colour codes
@@ -63,7 +63,7 @@
 
     # ── Extensions that only exist in the VS Code Marketplace ────────────────
     # These are silently skipped in Antigravity (no VSIX fallback attempted)
-    $vscodeOnlyExtensions = @(
+    $script:vscodeOnlyExtensions = @(
         'mrmlnc.vscode-csscomb',
         'maciejdems.add-to-gitignore',
         'NuclleaR.vscode-extension-auto-import',
