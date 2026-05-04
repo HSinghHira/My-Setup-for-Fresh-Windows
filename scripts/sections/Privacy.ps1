@@ -144,13 +144,12 @@ if ($key) {
         # ------------------------------------------------------------------
         # Final verification & Add-Result
         # ------------------------------------------------------------------
-        $regKeyPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Control Panel\DeviceRegion"
-        if (Test-Path $regKeyPath) {
-            $valueCount = (
-                Get-Item $regKeyPath | Get-ItemProperty |
-                Select-Object -ExpandProperty PSObject |
-                ForEach-Object { $_.Properties | Where-Object { $_.Name -notmatch '^PS' } }
-            ).Count
+        $regKey = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey(
+            'SOFTWARE\Microsoft\Windows\CurrentVersion\Control Panel\DeviceRegion', $false
+        )
+        if ($regKey) {
+            $valueCount = $regKey.GetValueNames().Count
+            $regKey.Close()
             if ($valueCount -eq 0) {
                 Write-Host "[$( Get-Timestamp )] OK EU Privacy Unlock complete — DeviceRegion key is empty." -ForegroundColor Green
                 Add-Result -App 'EU Privacy Unlock' -Status 'Installed'
