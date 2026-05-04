@@ -1,4 +1,4 @@
-
+# ── Extensions installed and ENABLED ─────────────────────────────────────
     $script:enabledExtensions = @(
         'xyz.local-history',                       # Local file history
         'mrmlnc.vscode-csscomb',                   # CSS property sorter
@@ -61,25 +61,6 @@
         'WebNative.webnative'         # WebNative framework support
     )
 
-    # ── Extensions that only exist in the VS Code Marketplace ────────────────
-    # These are silently skipped in Antigravity (no VSIX fallback attempted)
-    $script:vscodeOnlyExtensions = @(
-        'mrmlnc.vscode-csscomb',
-        'maciejdems.add-to-gitignore',
-        'NuclleaR.vscode-extension-auto-import',
-        'oleksandr.beatify-ejs',
-        'michelemelluso.code-beautifier',
-        'BrainstormDevelopment.copy-project-tree',
-        'easy-snippet-maker.custom-snippet-maker',
-        'rslfrkndmrky.rsl-vsc-focused-folder',
-        'hwencc.html-tag-wrapper',
-        'DutchIgor.json-viewer',
-        'mrkou47.npmignore',
-        'sototecnologia.remove-comments-frontend',
-        'misbahansori.svg-fold',
-        'vdanchenkov.tailwind-class-sorter',
-        'sidharthachatterjee.vscode-tailwindcss',
-        'bourhaouta.tailwindshades',
-        'westenets.vscode-backup',
-        'MarkosTh09.color-picker'
-    )
+    # NOTE: $vscodeOnlyExtensions has been removed.
+    # All extensions are now downloaded as VSIX and installed into every IDE,
+    # so Marketplace availability is no longer a limiting factor.

@@ -196,79 +196,169 @@ function Invoke-IdeCli {
     return $proc.ExitCode
 }
 
+function Get-VsixPath {
+    <#
+    .SYNOPSIS
+        Downloads a VSIX from the Marketplace if not already cached this session.
+        Returns the local path on success, $null on failure.
+        Uses $script:vsixCache (hashtable ExtId -> path) to avoid re-downloading.
+    #>
+    param([string]$ExtId)
+
+    if (-not $script:vsixCache) { $script:vsixCache = @{} }
+
+    # Return cached path if already downloaded
+    if ($script:vsixCache.ContainsKey($ExtId)) {
+        return $script:vsixCache[$ExtId]
+    }
+
+    try {
+        $parts     = $ExtId -split '\.'
+        $publisher = $parts[0]
+        $extName   = $parts[1..($parts.Count - 1)] -join '.'
+
+        # Query Marketplace API for latest version
+        $apiUrl  = 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery'
+        $body    = @{
+            filters = @(@{ criteria = @(@{ filterType = 7; value = $ExtId }) })
+            flags   = 914
+        } | ConvertTo-Json -Depth 10
+
+        $response = Invoke-RestMethod -Uri $apiUrl -Method POST -Body $body `
+            -ContentType 'application/json' `
+            -Headers @{ 'Accept' = 'application/json;api-version=7.1-preview.1' } `
+            -ErrorAction Stop
+
+        $version = $response.results[0].extensions[0].versions[0].version
+        if (-not $version) {
+            Write-Host "[$( Get-Timestamp )]       ! Could not resolve version for $ExtId" -ForegroundColor Yellow
+            return $null
+        }
+
+        $vsixUrl  = "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/$publisher/vsextensions/$extName/$version/vspackage"
+        $vsixPath = Resolve-UniqueFilePath (Join-Path $env:TEMP "$publisher.$extName-$version.vsix")
+
+        Write-Host "[$( Get-Timestamp )]       Downloading $ExtId v$version ..." -ForegroundColor DarkCyan
+        $ProgressPreference = 'SilentlyContinue'
+        Invoke-WebRequest -Uri $vsixUrl -OutFile $vsixPath -UseBasicParsing -ErrorAction Stop
+
+        $script:tempFiles.Add($vsixPath)
+        $script:vsixCache[$ExtId] = $vsixPath
+        return $vsixPath
+
+    } catch {
+        Write-Host "[$( Get-Timestamp )]       ! VSIX download failed for $ExtId`: $($_.Exception.Message)" -ForegroundColor Red
+        return $null
+    }
+}
+
 function Install-VSExtensions {
     param(
         [string[]]$EnabledExtensions,
-        [string[]]$DisabledExtensions   = @(),
-        [string[]]$VSCodeOnlyExtensions = @()
+        [string[]]$DisabledExtensions = @()
     )
 
     $ides = @(
-        @{ Name = 'VS Code';     Cli = 'code';        IsAntigravity = $false },
-        @{ Name = 'Antigravity'; Cli = 'antigravity';  IsAntigravity = $true  }
+        @{ Name = 'VS Code';     Cli = 'code'        },
+        @{ Name = 'Antigravity'; Cli = 'antigravity'  }
     )
 
+    # Build unified extension list with disable flag
     $allExtensions = @()
     $EnabledExtensions  | ForEach-Object { $allExtensions += [PSCustomObject]@{ Id = $_; Disable = $false } }
     $DisabledExtensions | ForEach-Object { $allExtensions += [PSCustomObject]@{ Id = $_; Disable = $true  } }
 
+    # Reset VSIX cache for this run
+    $script:vsixCache = @{}
+
+    # ── Phase 1: Download all VSIXs up front (once each) ──────────────────────
+    if (-not $DryRun) {
+        Write-Host ""
+        Write-Host "[$( Get-Timestamp )] # Downloading VSIXs ..." -ForegroundColor Cyan
+
+        foreach ($ext in $allExtensions) {
+            $null = Get-VsixPath -ExtId $ext.Id
+        }
+
+        Write-Host "[$( Get-Timestamp )]    OK VSIX downloads complete ($($script:vsixCache.Count)/$($allExtensions.Count) succeeded)." -ForegroundColor Green
+    }
+
+    # ── Phase 2: Install into each IDE ────────────────────────────────────────
     foreach ($ide in $ides) {
-        $cli           = $ide.Cli
-        $ideName       = $ide.Name
-        $isAntigravity = $ide.IsAntigravity
+        $cli     = $ide.Cli
+        $ideName = $ide.Name
 
         if (-not (Get-Command $cli -ErrorAction SilentlyContinue) -and
             -not (Get-Command "$cli.cmd" -ErrorAction SilentlyContinue)) {
-            Write-Host "[$( Get-Timestamp )]    ! $ideName CLI not found - skipping." -ForegroundColor Yellow
+            Write-Host "[$( Get-Timestamp )]    ! $ideName CLI not found — skipping." -ForegroundColor Yellow
             continue
         }
 
         Write-Host ""
         Write-Host "[$( Get-Timestamp )] # Installing extensions into $ideName ..." -ForegroundColor Cyan
 
-        $tmpOut = [System.IO.Path]::GetTempFileName()
-        $script:tempFiles.Add($tmpOut)
-        
-        $cmdShimInfo = Get-Command "$cli.cmd" -ErrorAction SilentlyContinue
-        $cmdShim     = if ($cmdShimInfo) { $cmdShimInfo.Source } else { $null }
-        if ($cmdShim) {
-            Start-Process -FilePath 'cmd.exe' -ArgumentList "/c `"$cmdShim`" --list-extensions > `"$tmpOut`" 2>&1" -WindowStyle Hidden -Wait
-        } else {
-            $exeInfo = Get-Command $cli -ErrorAction SilentlyContinue
-            Start-Process -FilePath $exeInfo.Source -ArgumentList '--list-extensions' -RedirectStandardOutput $tmpOut -WindowStyle Hidden -Wait
-        }
-        
+        # Build installed-extension list for this IDE
         $installedList = @()
-        Get-Content $tmpOut -ErrorAction SilentlyContinue | Where-Object { $_ -match '\.' } | ForEach-Object { $installedList += $_.Trim().ToLower() }
+        if (-not $DryRun) {
+            $tmpOut = [System.IO.Path]::GetTempFileName()
+            $script:tempFiles.Add($tmpOut)
+
+            $cmdShimInfo = Get-Command "$cli.cmd" -ErrorAction SilentlyContinue
+            $cmdShim     = if ($cmdShimInfo) { $cmdShimInfo.Source } else { $null }
+            if ($cmdShim) {
+                Start-Process -FilePath 'cmd.exe' `
+                    -ArgumentList "/c `"$cmdShim`" --list-extensions > `"$tmpOut`" 2>&1" `
+                    -WindowStyle Hidden -Wait
+            } else {
+                $exeInfo = Get-Command $cli -ErrorAction SilentlyContinue
+                Start-Process -FilePath $exeInfo.Source `
+                    -ArgumentList '--list-extensions' `
+                    -RedirectStandardOutput $tmpOut -WindowStyle Hidden -Wait
+            }
+            Get-Content $tmpOut -ErrorAction SilentlyContinue |
+                Where-Object { $_ -match '\.' } |
+                ForEach-Object { $installedList += $_.Trim().ToLower() }
+        }
 
         foreach ($ext in $allExtensions) {
             $extId = $ext.Id
-            if ($isAntigravity -and ($VSCodeOnlyExtensions -contains $extId)) { continue }
 
             if ($DryRun) {
-                Write-Host "[$( Get-Timestamp )]    ? [DRY-RUN] Would install ext: $extId into $ideName" -ForegroundColor Yellow
+                Write-Host "[$( Get-Timestamp )]    ~ [DryRun] Would install $extId into $ideName" -ForegroundColor Yellow
                 Add-Result -App "$ideName : $extId" -Status 'Skipped'
                 continue
             }
 
+            # Skip if already installed in this IDE
             if ($installedList -contains $extId.ToLower()) {
                 Write-Host "[$( Get-Timestamp )]    - $extId already in $ideName." -ForegroundColor DarkGray
                 Add-Result -App "$ideName : $extId" -Status 'Skipped'
-            } else {
-                $ec = Invoke-IdeCli -Cli $cli -Arguments @('--install-extension', $extId)
-                if ($ec -ne 0 -and $isAntigravity) {
-                    Write-Host "[$( Get-Timestamp )]    ! Marketplace install failed - trying VSIX ..." -ForegroundColor Yellow
-                    $ec = Install-ExtensionViaVsix -Cli $cli -ExtId $extId -IdeName $ideName
-                }
 
-                if ($ec -eq 0) {
-                    Write-Host "[$( Get-Timestamp )]    OK $extId -> $ideName" -ForegroundColor Green
-                    Add-Result -App "$ideName : $extId" -Status 'Installed'
-                } else {
-                    Write-Host "[$( Get-Timestamp )]    ERROR $extId failed in $ideName (exit $ec)" -ForegroundColor Red
-                    Add-Result -App "$ideName : $extId" -Status 'Failed'
-                    continue
+                # Still apply disable flag even if already installed
+                if ($ext.Disable) {
+                    $null = Invoke-IdeCli -Cli $cli -Arguments @('--disable-extension', $extId)
                 }
+                continue
+            }
+
+            # Get cached VSIX path (already downloaded in Phase 1)
+            $vsixPath = $script:vsixCache[$extId]
+
+            if (-not $vsixPath -or -not (Test-Path $vsixPath)) {
+                Write-Host "[$( Get-Timestamp )]    X $extId — no VSIX available, skipping $ideName." -ForegroundColor Red
+                Add-Result -App "$ideName : $extId" -Status 'Failed'
+                continue
+            }
+
+            # Install from VSIX
+            $ec = Invoke-IdeCli -Cli $cli -Arguments @('--install-extension', $vsixPath)
+
+            if ($ec -eq 0) {
+                Write-Host "[$( Get-Timestamp )]    OK $extId -> $ideName" -ForegroundColor Green
+                Add-Result -App "$ideName : $extId" -Status 'Installed'
+            } else {
+                Write-Host "[$( Get-Timestamp )]    ERROR $extId failed in $ideName (exit $ec)" -ForegroundColor Red
+                Add-Result -App "$ideName : $extId" -Status 'Failed'
             }
 
             if ($ext.Disable) {
@@ -279,26 +369,11 @@ function Install-VSExtensions {
 }
 
 function Install-ExtensionViaVsix {
+    # Kept for backwards compatibility — internally delegates to Get-VsixPath
     param( [string]$Cli, [string]$ExtId, [string]$IdeName )
-    try {
-        $parts     = $ExtId -split '\.'
-        $publisher = $parts[0]
-        $extName   = $parts[1..($parts.Count - 1)] -join '.'
-        $apiUrl    = 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery'
-        $body      = @{ filters = @(@{ criteria = @(@{ filterType = 7; value = $ExtId }) }); flags = 914 } | ConvertTo-Json -Depth 10
-        $response  = Invoke-RestMethod -Uri $apiUrl -Method POST -Body $body -ContentType 'application/json' -Headers @{ 'Accept' = 'application/json;api-version=7.1-preview.1' } -ErrorAction Stop
-
-        $version = $response.results[0].extensions[0].versions[0].version
-        if (-not $version) { return 1 }
-
-        $vsixUrl  = "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/$publisher/vsextensions/$extName/$version/vspackage"
-        $vsixPath = Resolve-UniqueFilePath (Join-Path $env:TEMP "$publisher.$extName-$version.vsix")
-
-        Write-Host "[$( Get-Timestamp )]       Downloading $ExtId v$version ..." -ForegroundColor DarkCyan
-        Invoke-WebRequest -Uri $vsixUrl -OutFile $vsixPath -UseBasicParsing -ErrorAction Stop
-        $script:tempFiles.Add($vsixPath)
-        return (Invoke-IdeCli -Cli $Cli -Arguments @('--install-extension', $vsixPath))
-    } catch { return 1 }
+    $vsixPath = Get-VsixPath -ExtId $ExtId
+    if (-not $vsixPath) { return 1 }
+    return (Invoke-IdeCli -Cli $Cli -Arguments @('--install-extension', $vsixPath))
 }
 
 function Set-RegistryValue {
