@@ -312,15 +312,20 @@ if ($SkipExtensions) {
     Write-Host "[$( Get-Timestamp )] - Skipping extensions (flag set)." -ForegroundColor DarkGray
 } else {
     Install-VSExtensions `
-        -EnabledExtensions    $enabledExtensions  `
-        -DisabledExtensions   $disabledExtensions `
-        -VSCodeOnlyExtensions $vscodeOnlyExtensions
+        -EnabledExtensions    $script:enabledExtensions  `
+        -DisabledExtensions   $script:disabledExtensions `
+        -VSCodeOnlyExtensions $script:vscodeOnlyExtensions
 }
 
 # --- Sections 12 & 13 (Modular) -----------------------------------------------
 
-. $script:Bootstrapper "scripts\sections\Debloat.ps1"
-. $script:Bootstrapper "scripts\sections\Privacy.ps1"
+foreach ($section in @("scripts\sections\Debloat.ps1", "scripts\sections\Privacy.ps1")) {
+    try {
+        . $script:Bootstrapper $section
+    } catch {
+        Write-Host "[$( Get-Timestamp )] X Section '$section' failed: $($_.Exception.Message)" -ForegroundColor Red
+    }
+}
 
 # ------------------------------------------------------------------------------
 #  Temp File Cleanup
@@ -368,4 +373,3 @@ Write-Host "Made with <3 by Harman Singh Hira - https://me.hsinghhira.me" -Foreg
 Write-Host ""
 
 try { Stop-Transcript | Out-Null } catch { Write-Host "Warning: Stop-Transcript failed: $_" -ForegroundColor Yellow }
-exit 0

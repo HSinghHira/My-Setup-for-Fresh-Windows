@@ -185,4 +185,6 @@ if ($SkipDebloat) {
     Write-Host "[$( Get-Timestamp )] # 12L - Dark Mode ..." -ForegroundColor Cyan
     Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'AppsUseLightTheme'   -Value 0
     Set-RegistryValue -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'SystemUsesLightTheme' -Value 0
+
+    Add-Result -App 'Debloat & Configuration' -Status 'Installed'
 }

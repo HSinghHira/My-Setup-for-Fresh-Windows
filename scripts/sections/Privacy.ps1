@@ -163,7 +163,7 @@ if ($key) {
         }
 
         # Open Privacy Settings so the user can confirm the new EU options
-        Start-Process "ms-settings:privacy"
+        try { Start-Process "ms-settings:privacy" -ErrorAction SilentlyContinue } catch {}
 
         # Clean up downloaded MinSudo.exe if it was fetched at runtime
         if ($minSudoTemp -and (Test-Path $minSudoExe)) {
