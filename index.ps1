@@ -14,6 +14,7 @@ param(
     [switch]$SkipExtensions,
     [switch]$SkipDebloat,
     [switch]$SkipEUPrivacy,
+    [switch]$SkipPython,
     [switch]$DryRun
 )
 
@@ -82,7 +83,7 @@ if (-not $isAdmin) {
     Write-Host "X This script must be run as Administrator." -ForegroundColor Red
     Write-Host "  Right-click PowerShell and choose 'Run as administrator'." -ForegroundColor Yellow
     Write-Host ""
-    try { Stop-Transcript | Out-Null } catch {}
+    try { Stop-Transcript | Out-Null } catch { Write-Host "Warning: Stop-Transcript failed: $_" -ForegroundColor Yellow }
     exit 1
 }
 
@@ -115,7 +116,7 @@ Write-Host "------------------------------------------------------------" -Foreg
 
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Host "[$( Get-Timestamp )] X winget not found. Install 'App Installer' from the MS Store." -ForegroundColor Red
-    try { Stop-Transcript | Out-Null } catch {}
+    try { Stop-Transcript | Out-Null } catch { Write-Host "Warning: Stop-Transcript failed: $_" -ForegroundColor Yellow }
     exit 1
 }
 
@@ -220,15 +221,61 @@ if ($SkipDevSetup) {
     Install-WingetApp -Id 'Microsoft.VisualStudioCode' -Label 'VS Code'
     Install-WingetApp -Id 'Microsoft.WindowsTerminal'  -Label 'Windows Terminal'
     Install-WingetApp -Id 'Microsoft.PowerShell'       -Label 'PowerShell 7'
-    Install-WingetApp -Id 'Python.Python.3.11'         -Label 'Python 3.11'
-
-    $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +
-                [System.Environment]::GetEnvironmentVariable('PATH', 'User')
+    Install-WingetApp -Id 'astral-sh.uv'               -Label 'UV - Python Package Manager'
 
     if (Get-Command volta -ErrorAction SilentlyContinue) {
         Write-Host "[$( Get-Timestamp )] # Installing Node via Volta ..." -ForegroundColor DarkCyan
-        volta install node 2>&1 | Out-Null
-        Add-Result -App 'Node (via Volta)' -Status 'Installed'
+        if (-not $DryRun) {
+            try {
+                volta install node 2>&1 | Out-Null
+                Add-Result -App 'Node (via Volta)' -Status 'Installed'
+            } catch {
+                Write-Host "[$( Get-Timestamp )] X Failed to install Node via Volta: $_" -ForegroundColor Red
+                Add-Result -App 'Node (via Volta)' -Status 'Failed'
+            }
+        } else {
+            Write-Host "[$( Get-Timestamp )] ~ [DryRun] Would run: volta install node" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "[$( Get-Timestamp )] X volta not found, skipping Node install." -ForegroundColor Red
+    }
+
+    # Refresh PATH so uv is discoverable immediately after winget install
+    $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +
+                [System.Environment]::GetEnvironmentVariable('PATH', 'User')
+
+    if ($SkipPython) {
+        Write-Host "[$( Get-Timestamp )] - Skipping Python & graphifyy install (flag set)." -ForegroundColor DarkGray
+    } elseif (Get-Command uv -ErrorAction SilentlyContinue) {
+        Write-Host "[$( Get-Timestamp )] # Installing Python via UV ..." -ForegroundColor DarkCyan
+        if (-not $DryRun) {
+            try {
+                uv python install 2>&1 | Out-Null
+                Add-Result -App 'Python (via UV)' -Status 'Installed'
+            } catch {
+                Write-Host "[$( Get-Timestamp )] X Failed to install Python via UV: $_" -ForegroundColor Red
+                Add-Result -App 'Python (via UV)' -Status 'Failed'
+            }
+        } else {
+            Write-Host "[$( Get-Timestamp )] ~ [DryRun] Would run: uv python install" -ForegroundColor Yellow
+        }
+
+        Write-Host "[$( Get-Timestamp )] # Installing graphifyy via UV pip ..." -ForegroundColor DarkCyan
+        if (-not $DryRun) {
+            try {
+                uv pip install graphifyy --system 2>&1 | Out-Null
+                Add-Result -App 'graphifyy (via UV pip)' -Status 'Installed'
+            } catch {
+                Write-Host "[$( Get-Timestamp )] X Failed to install graphifyy: $_" -ForegroundColor Red
+                Add-Result -App 'graphifyy (via UV pip)' -Status 'Failed'
+            }
+        } else {
+            Write-Host "[$( Get-Timestamp )] ~ [DryRun] Would run: uv pip install graphifyy --system" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "[$( Get-Timestamp )] X uv not found, skipping Python and graphifyy install." -ForegroundColor Red
+        Add-Result -App 'Python (via UV)' -Status 'Failed'
+        Add-Result -App 'graphifyy (via UV pip)' -Status 'Failed'
     }
 }
 
@@ -320,5 +367,5 @@ Write-Host ""
 Write-Host "Made with <3 by Harman Singh Hira - https://me.hsinghhira.me" -ForegroundColor Gray
 Write-Host ""
 
-try { Stop-Transcript | Out-Null } catch {}
+try { Stop-Transcript | Out-Null } catch { Write-Host "Warning: Stop-Transcript failed: $_" -ForegroundColor Yellow }
 exit 0
